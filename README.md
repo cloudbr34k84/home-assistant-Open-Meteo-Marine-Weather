@@ -1,1 +1,1 @@
-# open_meteo_marine_weather
+# Open Meteo Marine Weather
