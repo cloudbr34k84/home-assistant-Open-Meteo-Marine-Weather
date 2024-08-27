@@ -1,0 +1,9 @@
+{
+    "domain": "marine_weather",
+    "name": "Marine Weather",
+    "version": "1.0",
+    "documentation": "https://github.com/yourusername/marine_weather",
+    "dependencies": [],
+    "codeowners": ["@yourusername"],
+    "requirements": ["requests"]
+}
