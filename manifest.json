@@ -1,9 +1,9 @@
 {
     "domain": "marine_weather",
-    "name": "Marine Weather",
+    "name": "Open Meteo Marine Weather",
     "version": "1.0",
-    "documentation": "https://github.com/yourusername/marine_weather",
+    "documentation": "https://github.com/cloudbr34k84/Open-Meteo-Marine-Weather",
     "dependencies": [],
-    "codeowners": ["@yourusername"],
+    "codeowners": ["@cloudbr34k84"],
     "requirements": ["requests"]
 }
