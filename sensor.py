@@ -1,4 +1,3 @@
-import requests
 import logging
 import aiohttp  # Import for asynchronous HTTP requests
 import asyncio  # Import for using asyncio features
@@ -129,40 +128,41 @@ class MarineWeatherCurrentSensor(SensorEntity):
             session = async_get_clientsession(self.hass)
             
             # Fetch the current marine weather data from the API
-            async with session.get(
-                f"{API_URL}?latitude={self.latitude}&longitude={self.longitude}&current=wave_height,wave_direction,wave_period,wind_wave_height,wind_wave_direction,wind_wave_period,wind_wave_peak_period,swell_wave_height,swell_wave_direction,swell_wave_period,swell_wave_peak_period&timezone=Australia%2FSydney&models=best_match"
-            ) as response:
-                response.raise_for_status()  # Raise an error for bad HTTP status codes
-                data = await response.json()
-                
-                # Check if the API returned current data
-                if "current" in data:
-                    # Extract swell wave data from the response
-                    swell_wave_height = data["current"].get("swell_wave_height", None)
-                    swell_wave_direction_degrees = data["current"].get("swell_wave_direction", None)
-                    wave_height = data["current"].get("wave_height", None)
-                    wave_direction_degrees = data["current"].get("wave_direction", None)
-                    swell_wave_period = data["current"].get("swell_wave_period", None)
-                    swell_wave_peak_period = data["current"].get("swell_wave_peak_period", None)
+            async with async_timeout.timeout(10):  # Adding timeout for API requests
+                async with session.get(
+                    f"{API_URL}?latitude={self.latitude}&longitude={self.longitude}&current=wave_height,wave_direction,wave_period,wind_wave_height,wind_wave_direction,wind_wave_period,wind_wave_peak_period,swell_wave_height,swell_wave_direction,swell_wave_period,swell_wave_peak_period&timezone=Australia%2FSydney&models=best_match"
+                ) as response:
+                    response.raise_for_status()  # Raise an error for bad HTTP status codes
+                    data = await response.json()
                     
-                    # Set the main state of the sensor to swell_wave_height
-                    self._state = swell_wave_height
-                    self._attributes = {
-                        "latitude": self.latitude,
-                        "longitude": self.longitude,
-                        "swell_wave_height": f"{swell_wave_height} m" if swell_wave_height is not None else "Unknown",
-                        "swell_wave_direction": swell_wave_direction_degrees,
-                        "swell_wave_direction_name": degrees_to_compass(swell_wave_direction_degrees),
-                        "swell_wave_period": f"{swell_wave_period} s" if swell_wave_period is not None else "Unknown",
-                        "swell_wave_peak_period": f"{swell_wave_peak_period} s" if swell_wave_peak_period is not None else "Unknown",
-                        "wave_height": f"{wave_height} m" if wave_height is not None else "Unknown",
-                        "wave_direction": wave_direction_degrees,
-                        "wave_direction_name": degrees_to_compass(wave_direction_degrees),
-                        "timezone": data.get("timezone", "Unknown"),
-                        "models": "best_match",
-                    }
-                else:
-                    _LOGGER.error(f"No 'current' data found in the API response for {self._name}. Response: {data}")
+                    # Check if the API returned current data
+                    if "current" in data:
+                        # Extract swell wave data from the response
+                        swell_wave_height = data["current"].get("swell_wave_height", None)
+                        swell_wave_direction_degrees = data["current"].get("swell_wave_direction", None)
+                        wave_height = data["current"].get("wave_height", None)
+                        wave_direction_degrees = data["current"].get("wave_direction", None)
+                        swell_wave_period = data["current"].get("swell_wave_period", None)
+                        swell_wave_peak_period = data["current"].get("swell_wave_peak_period", None)
+                        
+                        # Set the main state of the sensor to swell_wave_height
+                        self._state = swell_wave_height
+                        self._attributes = {
+                            "latitude": self.latitude,
+                            "longitude": self.longitude,
+                            "swell_wave_height": f"{swell_wave_height} m" if swell_wave_height is not None else "Unknown",
+                            "swell_wave_direction": swell_wave_direction_degrees,
+                            "swell_wave_direction_name": degrees_to_compass(swell_wave_direction_degrees),
+                            "swell_wave_period": f"{swell_wave_period} s" if swell_wave_period is not None else "Unknown",
+                            "swell_wave_peak_period": f"{swell_wave_peak_period} s" if swell_wave_peak_period is not None else "Unknown",
+                            "wave_height": f"{wave_height} m" if wave_height is not None else "Unknown",
+                            "wave_direction": wave_direction_degrees,
+                            "wave_direction_name": degrees_to_compass(wave_direction_degrees),
+                            "timezone": data.get("timezone", "Unknown"),
+                            "models": "best_match",
+                        }
+                    else:
+                        _LOGGER.error(f"No 'current' data found in the API response for {self._name}. Response: {data}")
 
         except aiohttp.ClientResponseError as http_err:
             _LOGGER.error(f"HTTP error occurred while fetching current data for {self._name}: {http_err}")
@@ -170,6 +170,10 @@ class MarineWeatherCurrentSensor(SensorEntity):
             self._attributes = {}
         except aiohttp.ClientError as req_err:
             _LOGGER.error(f"Request exception occurred while fetching current data for {self._name}: {req_err}")
+            self._state = None
+            self._attributes = {}
+        except asyncio.TimeoutError:
+            _LOGGER.error(f"Timeout occurred while fetching current data for {self._name}")
             self._state = None
             self._attributes = {}
         except ValueError as json_err:
