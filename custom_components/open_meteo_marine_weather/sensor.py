@@ -428,8 +428,18 @@ async def async_setup_entry(hass, entry, async_add_entities):
         health_sensor._entry_id = entry.entry_id
         sensors.append(health_sensor)
 
+    # Get locations from config entry data, with fallback to default locations
+    locations = entry.data.get("locations")
+    if not locations:
+        # Default locations if none provided in config entry
+        locations = [
+            {"latitude": -26.6715, "longitude": 153.1006, "name": "Alexandra Headlands"},
+            {"latitude": -26.8017, "longitude": 153.1426, "name": "Kings Beach"},
+            {"latitude": -26.7905, "longitude": 153.1400, "name": "Moffat Beach"},
+        ]
+
     # Create coordinators and sensors for each location
-    for location in LOCATIONS:
+    for location in locations:
         # Create a coordinator for this location
         coordinator = MarineWeatherDataUpdateCoordinator(hass, health_monitor, location)
         coordinators.append(coordinator)
