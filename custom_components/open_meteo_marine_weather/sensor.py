@@ -1,6 +1,7 @@
 import logging
 import aiohttp  # Import for asynchronous HTTP requests
 import asyncio  # Import for using asyncio features
+import async_timeout  # Add this import
 from datetime import timedelta
 from homeassistant.components.sensor import SensorEntity
 from homeassistant.const import LENGTH_METERS, DEGREE
