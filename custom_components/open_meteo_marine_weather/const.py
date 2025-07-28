@@ -2,6 +2,9 @@ DOMAIN = "open_meteo_marine_weather"
 API_URL = "https://marine-api.open-meteo.com/v1/marine"
 PLATFORMS = ["sensor"]
 
+# Data Update Coordinator Configuration
+DEFAULT_UPDATE_INTERVAL = 30  # minutes
+
 # API Health Check Configuration
 API_HEALTH_CHECK_INTERVAL = 300  # 5 minutes
 API_HEALTH_CHECK_TIMEOUT = 10    # 10 seconds
