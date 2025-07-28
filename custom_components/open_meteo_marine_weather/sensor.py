@@ -9,7 +9,13 @@ from homeassistant.util import Throttle
 from homeassistant.helpers.aiohttp_client import async_get_clientsession  # Import for getting the Home Assistant HTTP session
 from homeassistant.helpers.debounce import Debouncer  # Import for handling debouncing/throttling
 from homeassistant.helpers.event import async_track_time_interval  # Import for setting up periodic updates
-from .const import DOMAIN, API_URL
+from .const import (
+    DOMAIN, 
+    API_URL,
+    HEALTH_STATUS_HEALTHY,
+    HEALTH_STATUS_DEGRADED,
+    HEALTH_STATUS_UNHEALTHY
+)
 
 # Set up a logger for the component, which helps in logging error and debug messages
 _LOGGER = logging.getLogger(__name__)
@@ -162,6 +168,21 @@ class MarineWeatherCurrentSensor(SensorEntity):
         Fetch new data from the API for the sensor.
         This method runs asynchronously to avoid blocking Home Assistant's event loop.
         """
+        # Get health monitor if available
+        health_monitor = None
+        if hasattr(self, 'hass') and DOMAIN in self.hass.data:
+            health_monitor = self.hass.data[DOMAIN].get("health_monitor")
+        
+        # Check API health before making request
+        if health_monitor and not health_monitor.is_healthy:
+            health_status = health_monitor.status
+            if health_status == HEALTH_STATUS_UNHEALTHY:
+                _LOGGER.warning(f"Skipping update for {self._name} - API is unhealthy")
+                # Don't clear existing data for unhealthy status, keep last known good values
+                return
+            elif health_status == HEALTH_STATUS_DEGRADED:
+                _LOGGER.debug(f"API status is degraded for {self._name}, proceeding with caution")
+        
         try:
             # Obtain the aiohttp session from Home Assistant
             session = async_get_clientsession(self.hass)
@@ -200,29 +221,123 @@ class MarineWeatherCurrentSensor(SensorEntity):
                             "timezone": data.get("timezone", "Unknown"),
                             "models": "best_match",
                         }
+                        
+                        # Add API health status to attributes if available
+                        if health_monitor:
+                            self._attributes["api_health_status"] = health_monitor.status
+                            metrics = health_monitor.metrics
+                            self._attributes["api_success_rate"] = f"{metrics['success_rate']:.1f}%"
+                            if metrics['average_response_time']:
+                                self._attributes["api_avg_response_time"] = f"{metrics['average_response_time']:.2f}s"
+                        
                     else:
                         _LOGGER.error(f"No 'current' data found in the API response for {self._name}. Response: {data}")
 
         except aiohttp.ClientResponseError as http_err:
             _LOGGER.error(f"HTTP error occurred while fetching current data for {self._name}: {http_err}")
+            # On error, trigger health check if monitor is available
+            if health_monitor:
+                asyncio.create_task(health_monitor.check_health())
             self._state = None
             self._attributes = {}
         except aiohttp.ClientError as req_err:
             _LOGGER.error(f"Request exception occurred while fetching current data for {self._name}: {req_err}")
+            # On error, trigger health check if monitor is available
+            if health_monitor:
+                asyncio.create_task(health_monitor.check_health())
             self._state = None
             self._attributes = {}
         except asyncio.TimeoutError:
             _LOGGER.error(f"Timeout occurred while fetching current data for {self._name}")
+            # On timeout, trigger health check if monitor is available
+            if health_monitor:
+                asyncio.create_task(health_monitor.check_health())
             self._state = None
             self._attributes = {}
         except ValueError as json_err:
             _LOGGER.error(f"JSON decode error occurred while processing the response for {self._name}: {json_err}")
+            # On JSON error, trigger health check if monitor is available
+            if health_monitor:
+                asyncio.create_task(health_monitor.check_health())
             self._state = None
             self._attributes = {}
         except Exception as e:
             _LOGGER.error(f"Unexpected error occurred while fetching current data for {self._name}: {e}")
+            # On unexpected error, trigger health check if monitor is available
+            if health_monitor:
+                asyncio.create_task(health_monitor.check_health())
             self._state = None
             self._attributes = {}
+
+
+class APIHealthSensor(SensorEntity):
+    """
+    Sensor that reports API health status and metrics.
+    """
+    
+    def __init__(self, health_monitor):
+        """Initialize the API health sensor."""
+        self._health_monitor = health_monitor
+        self._name = "Open Meteo Marine Weather API Health"
+        self._state = None
+        self._attributes = {}
+        
+    @property
+    def name(self):
+        """Return the name of the sensor."""
+        return self._name
+        
+    @property
+    def state(self):
+        """Return the current API health status."""
+        return self._state
+        
+    @property
+    def extra_state_attributes(self):
+        """Return additional health metrics."""
+        return self._attributes
+        
+    @property
+    def device_class(self):
+        """Return the device class."""
+        return None
+        
+    @property
+    def unique_id(self):
+        """Return a unique ID for this sensor."""
+        return f"{DOMAIN}_api_health"
+        
+    @property
+    def icon(self):
+        """Return the icon for this sensor."""
+        if self._state == HEALTH_STATUS_HEALTHY:
+            return "mdi:check-circle"
+        elif self._state == HEALTH_STATUS_DEGRADED:
+            return "mdi:alert-circle"
+        elif self._state == HEALTH_STATUS_UNHEALTHY:
+            return "mdi:close-circle"
+        else:
+            return "mdi:help-circle"
+            
+    async def async_added_to_hass(self):
+        """Called when entity is added to hass."""
+        # Initial update
+        await self.async_update()
+        
+        # Track this sensor for cleanup
+        entry_id = getattr(self, '_entry_id', None)
+        if entry_id and DOMAIN in self.hass.data and entry_id in self.hass.data[DOMAIN]:
+            self.hass.data[DOMAIN][entry_id]["sensors"].append(self)
+            
+    async def async_update(self):
+        """Update the sensor with current health status."""
+        if self._health_monitor:
+            self._state = self._health_monitor.status
+            self._attributes = self._health_monitor.metrics
+        else:
+            self._state = "unavailable"
+            self._attributes = {}
+
 
 async def async_setup_platform(hass, config, async_add_entities, discovery_info=None):
     """
@@ -247,6 +362,17 @@ async def async_setup_platform(hass, config, async_add_entities, discovery_info=
 async def async_setup_entry(hass, entry, async_add_entities):
     """Set up Marine Weather sensors from a config entry."""
     sensors = []
+
+    # Get health monitor from hass data
+    health_monitor = None
+    if DOMAIN in hass.data and "health_monitor" in hass.data[DOMAIN]:
+        health_monitor = hass.data[DOMAIN]["health_monitor"]
+
+    # Create API health sensor if health monitor is available
+    if health_monitor:
+        health_sensor = APIHealthSensor(health_monitor)
+        health_sensor._entry_id = entry.entry_id
+        sensors.append(health_sensor)
 
     # Loop through the hardcoded locations and create sensors for each
     for location in LOCATIONS:

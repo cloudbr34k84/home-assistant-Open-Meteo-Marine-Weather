@@ -1,0 +1,11 @@
+reload:
+  name: Reload Marine Weather Integration
+  description: Reload the Marine Weather integration and all its entities
+
+cleanup:
+  name: Manual Cleanup
+  description: Manually cleanup resources and sessions for the Marine Weather integration
+
+health_check:
+  name: API Health Check
+  description: Perform a manual health check of the Open Meteo Marine API

@@ -1,0 +1,43 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Marine Weather",
+        "description": "Set up Marine Weather integration to fetch current marine weather data.",
+        "data": {
+          "latitude": "Latitude",
+          "longitude": "Longitude"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Failed to connect to the Marine Weather API",
+      "invalid_auth": "Invalid authentication",
+      "unknown": "Unexpected error"
+    },
+    "abort": {
+      "already_configured": "Marine Weather is already configured"
+    }
+  },
+  "entity": {
+    "sensor": {
+      "open_meteo_marine_weather_api_health": {
+        "name": "API Health Status"
+      }
+    }
+  },
+  "services": {
+    "reload": {
+      "name": "Reload",
+      "description": "Reload the Marine Weather integration and all its entities"
+    },
+    "cleanup": {
+      "name": "Manual Cleanup", 
+      "description": "Manually cleanup resources and sessions for the Marine Weather integration"
+    },
+    "health_check": {
+      "name": "API Health Check",
+      "description": "Perform a manual health check of the Open Meteo Marine API"
+    }
+  }
+}

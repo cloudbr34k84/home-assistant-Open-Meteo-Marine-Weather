@@ -1,6 +1,7 @@
 import logging
 import asyncio
 import time
+from datetime import datetime, timedelta
 from homeassistant.core import HomeAssistant, ServiceCall
 from homeassistant.config_entries import ConfigEntry, ConfigEntryState
 from homeassistant.helpers import discovery
@@ -8,6 +9,8 @@ from homeassistant.exceptions import ConfigEntryNotReady
 from homeassistant.helpers.reload import async_integration_yaml_config
 from homeassistant.helpers.service import async_register_admin_service
 from homeassistant.helpers.network import async_get_source_ip
+from homeassistant.helpers.aiohttp_client import async_get_clientsession
+from homeassistant.helpers.event import async_track_time_interval
 
 # Optional psutil import for memory monitoring
 try:
@@ -16,14 +19,207 @@ try:
 except ImportError:
     PSUTIL_AVAILABLE = False
 
-from .const import DOMAIN, PLATFORMS
+from .const import (
+    DOMAIN, 
+    PLATFORMS,
+    API_HEALTH_CHECK_INTERVAL,
+    API_HEALTH_CHECK_TIMEOUT,
+    API_HEALTH_CHECK_ENDPOINT,
+    API_HEALTH_CONSECUTIVE_FAILURES_THRESHOLD,
+    API_HEALTH_RECOVERY_THRESHOLD,
+    HEALTH_STATUS_HEALTHY,
+    HEALTH_STATUS_DEGRADED,
+    HEALTH_STATUS_UNHEALTHY,
+    HEALTH_STATUS_UNKNOWN
+)
 
 _LOGGER = logging.getLogger(__name__)
+
+
+class APIHealthMonitor:
+    """Monitor API health status and track performance metrics."""
+    
+    def __init__(self, hass: HomeAssistant):
+        """Initialize the API health monitor."""
+        self.hass = hass
+        self._status = HEALTH_STATUS_UNKNOWN
+        self._consecutive_failures = 0
+        self._consecutive_successes = 0
+        self._last_check_time = None
+        self._last_success_time = None
+        self._last_failure_time = None
+        self._response_times = []
+        self._error_count = 0
+        self._total_checks = 0
+        self._health_check_task = None
+        self._listeners = []
+        
+    @property
+    def status(self) -> str:
+        """Return current API health status."""
+        return self._status
+        
+    @property
+    def is_healthy(self) -> bool:
+        """Return True if API is healthy."""
+        return self._status == HEALTH_STATUS_HEALTHY
+        
+    @property
+    def metrics(self) -> dict:
+        """Return health metrics."""
+        avg_response_time = None
+        if self._response_times:
+            avg_response_time = sum(self._response_times) / len(self._response_times)
+            
+        return {
+            "status": self._status,
+            "consecutive_failures": self._consecutive_failures,
+            "consecutive_successes": self._consecutive_successes,
+            "last_check_time": self._last_check_time.isoformat() if self._last_check_time else None,
+            "last_success_time": self._last_success_time.isoformat() if self._last_success_time else None,
+            "last_failure_time": self._last_failure_time.isoformat() if self._last_failure_time else None,
+            "average_response_time": avg_response_time,
+            "error_count": self._error_count,
+            "total_checks": self._total_checks,
+            "success_rate": (self._total_checks - self._error_count) / max(self._total_checks, 1) * 100
+        }
+    
+    async def start_monitoring(self):
+        """Start the health monitoring task."""
+        if self._health_check_task is None or self._health_check_task.done():
+            _LOGGER.info("Starting API health monitoring")
+            self._health_check_task = asyncio.create_task(self._periodic_health_check())
+            
+    async def stop_monitoring(self):
+        """Stop the health monitoring task."""
+        if self._health_check_task and not self._health_check_task.done():
+            _LOGGER.info("Stopping API health monitoring")
+            self._health_check_task.cancel()
+            try:
+                await self._health_check_task
+            except asyncio.CancelledError:
+                pass
+            finally:
+                self._health_check_task = None
+                
+    async def _periodic_health_check(self):
+        """Perform periodic health checks."""
+        while True:
+            try:
+                await asyncio.sleep(API_HEALTH_CHECK_INTERVAL)
+                await self.check_health()
+            except asyncio.CancelledError:
+                break
+            except Exception as e:
+                _LOGGER.error(f"Error in periodic health check: {e}")
+                
+    async def check_health(self) -> bool:
+        """Perform a single health check."""
+        start_time = time.time()
+        self._last_check_time = datetime.now()
+        self._total_checks += 1
+        
+        try:
+            session = async_get_clientsession(self.hass)
+            
+            # Test endpoint with minimal parameters
+            test_url = f"{API_HEALTH_CHECK_ENDPOINT}?latitude=0&longitude=0&current=wave_height"
+            
+            async with asyncio.timeout(API_HEALTH_CHECK_TIMEOUT):
+                async with session.get(test_url) as response:
+                    response_time = time.time() - start_time
+                    
+                    # Store response time (keep last 10 measurements)
+                    self._response_times.append(response_time)
+                    if len(self._response_times) > 10:
+                        self._response_times.pop(0)
+                    
+                    if response.status == 200:
+                        data = await response.json()
+                        # Basic validation that the API returns expected structure
+                        if "current" in data:
+                            await self._handle_success(response_time)
+                            return True
+                        else:
+                            await self._handle_failure("Invalid API response structure", response_time)
+                            return False
+                    else:
+                        await self._handle_failure(f"HTTP {response.status}", response_time)
+                        return False
+                        
+        except asyncio.TimeoutError:
+            response_time = time.time() - start_time
+            await self._handle_failure("Timeout", response_time)
+            return False
+        except Exception as e:
+            response_time = time.time() - start_time
+            await self._handle_failure(str(e), response_time)
+            return False
+            
+    async def _handle_success(self, response_time: float):
+        """Handle successful health check."""
+        self._consecutive_failures = 0
+        self._consecutive_successes += 1
+        self._last_success_time = datetime.now()
+        
+        # Update status based on response time and consecutive successes
+        if response_time > 5.0:  # Slow response
+            new_status = HEALTH_STATUS_DEGRADED
+        elif self._consecutive_successes >= API_HEALTH_RECOVERY_THRESHOLD:
+            new_status = HEALTH_STATUS_HEALTHY
+        else:
+            new_status = HEALTH_STATUS_DEGRADED
+            
+        await self._update_status(new_status)
+        
+        _LOGGER.debug(f"API health check successful: {response_time:.2f}s response time")
+        
+    async def _handle_failure(self, error: str, response_time: float):
+        """Handle failed health check."""
+        self._consecutive_successes = 0
+        self._consecutive_failures += 1
+        self._last_failure_time = datetime.now()
+        self._error_count += 1
+        
+        # Update status based on consecutive failures
+        if self._consecutive_failures >= API_HEALTH_CONSECUTIVE_FAILURES_THRESHOLD:
+            new_status = HEALTH_STATUS_UNHEALTHY
+        else:
+            new_status = HEALTH_STATUS_DEGRADED
+            
+        await self._update_status(new_status)
+        
+        _LOGGER.warning(f"API health check failed: {error} (response time: {response_time:.2f}s)")
+        
+    async def _update_status(self, new_status: str):
+        """Update health status and notify if changed."""
+        if self._status != new_status:
+            old_status = self._status
+            self._status = new_status
+            
+            _LOGGER.info(f"API health status changed from {old_status} to {new_status}")
+            
+            # Fire event for status change
+            self.hass.bus.async_fire(
+                f"{DOMAIN}_api_health_status_changed",
+                {
+                    "old_status": old_status,
+                    "new_status": new_status,
+                    "metrics": self.metrics
+                }
+            )
+
 
 async def async_setup(hass: HomeAssistant, config: dict) -> bool:
     """Set up the Marine Weather integration."""
     try:
         hass.data.setdefault(DOMAIN, {})
+        
+        # Initialize global health monitor
+        if "health_monitor" not in hass.data[DOMAIN]:
+            health_monitor = APIHealthMonitor(hass)
+            hass.data[DOMAIN]["health_monitor"] = health_monitor
+            await health_monitor.start_monitoring()
         
         # Register reload service
         async def async_reload_service_handler(service_call: ServiceCall) -> None:
@@ -69,6 +265,27 @@ async def async_setup(hass: HomeAssistant, config: dict) -> bool:
             except Exception as e:
                 _LOGGER.error(f"Error during manual cleanup: {e}")
         
+        # Register API health check service
+        async def async_health_check_service_handler(service_call: ServiceCall) -> None:
+            """Handle manual API health check service call."""
+            _LOGGER.info("Manual API health check requested")
+            health_monitor = hass.data[DOMAIN].get("health_monitor")
+            if health_monitor:
+                is_healthy = await health_monitor.check_health()
+                metrics = health_monitor.metrics
+                _LOGGER.info(f"API health check completed. Status: {metrics['status']}, Healthy: {is_healthy}")
+                
+                # Fire event with results
+                hass.bus.async_fire(
+                    f"{DOMAIN}_manual_health_check_completed",
+                    {
+                        "is_healthy": is_healthy,
+                        "metrics": metrics
+                    }
+                )
+            else:
+                _LOGGER.error("Health monitor not available")
+        
         async_register_admin_service(
             hass,
             DOMAIN,
@@ -81,6 +298,13 @@ async def async_setup(hass: HomeAssistant, config: dict) -> bool:
             DOMAIN,
             "cleanup",
             async_cleanup_service_handler,
+        )
+        
+        async_register_admin_service(
+            hass,
+            DOMAIN,
+            "health_check",
+            async_health_check_service_handler,
         )
         
         if DOMAIN in config:
@@ -141,6 +365,24 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             "sessions": [],
             "coordinators": []
         }
+        
+        # Ensure health monitor is available
+        if "health_monitor" not in hass.data[DOMAIN]:
+            health_monitor = APIHealthMonitor(hass)
+            hass.data[DOMAIN]["health_monitor"] = health_monitor
+            await health_monitor.start_monitoring()
+        
+        # Perform initial health check before loading platforms
+        health_monitor = hass.data[DOMAIN]["health_monitor"]
+        initial_health = await health_monitor.check_health()
+        
+        if not initial_health:
+            _LOGGER.warning("Initial API health check failed, but continuing with setup")
+        else:
+            _LOGGER.info("Initial API health check passed")
+        
+        # Store health monitor reference for this entry
+        hass.data[DOMAIN][entry.entry_id]["health_monitor"] = health_monitor
         
         # Load related platforms with timeout and retry logic
         max_retries = 3
@@ -280,7 +522,24 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             # Remove this specific entry's data
             hass.data[DOMAIN].pop(entry.entry_id, None)
             
-            # If no more entries, remove the domain data entirely
+            # Check if this was the last entry and clean up global resources
+            remaining_entries = [
+                key for key in hass.data[DOMAIN].keys() 
+                if key != "health_monitor" and isinstance(hass.data[DOMAIN][key], dict)
+            ]
+            
+            # If no more entries, stop health monitor
+            if not remaining_entries and "health_monitor" in hass.data[DOMAIN]:
+                health_monitor = hass.data[DOMAIN]["health_monitor"]
+                try:
+                    await health_monitor.stop_monitoring()
+                    _LOGGER.debug("Stopped API health monitoring")
+                except Exception as e:
+                    _LOGGER.warning(f"Error stopping health monitor: {e}")
+                finally:
+                    hass.data[DOMAIN].pop("health_monitor", None)
+            
+            # If no more entries and no health monitor, remove the domain data entirely
             if not hass.data[DOMAIN]:
                 hass.data.pop(DOMAIN, None)
         
