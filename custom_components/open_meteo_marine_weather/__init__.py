@@ -233,10 +233,11 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             _LOGGER.error("Config entry data is missing")
             raise ConfigEntryNotReady("Config entry data is missing")
         
-        # Validate required configuration fields
-        if not entry.data.get("latitude") or not entry.data.get("longitude"):
-            _LOGGER.error("Missing required configuration data (latitude/longitude)")
-            raise ConfigEntryNotReady("Missing required configuration data")
+        # Validate locations configuration
+        locations = entry.data.get("locations")
+        if locations is None or not isinstance(locations, list):
+            _LOGGER.error("Invalid locations configuration - must be a list")
+            raise ConfigEntryNotReady("Invalid locations configuration")
         
         # Check network connectivity before setup
         try:
