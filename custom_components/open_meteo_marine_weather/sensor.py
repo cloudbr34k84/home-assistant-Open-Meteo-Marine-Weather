@@ -3,8 +3,9 @@ import aiohttp  # Import for asynchronous HTTP requests
 import asyncio  # Import for using asyncio features
 import async_timeout  # Add this import
 from datetime import timedelta
-from homeassistant.components.sensor import SensorEntity
-from homeassistant.const import LENGTH_METERS, DEGREE
+from homeassistant.components.sensor import SensorEntity, SensorStateClass, SensorDeviceClass
+from homeassistant.const import UnitOfLength, UnitOfTime, DEGREE, PERCENTAGE, UnitOfFrequency
+from homeassistant.helpers.entity import EntityCategory
 from homeassistant.util import Throttle
 from homeassistant.helpers.aiohttp_client import async_get_clientsession  # Import for getting the Home Assistant HTTP session
 from homeassistant.helpers.debounce import Debouncer  # Import for handling debouncing/throttling
@@ -14,7 +15,8 @@ from .const import (
     API_URL,
     HEALTH_STATUS_HEALTHY,
     HEALTH_STATUS_DEGRADED,
-    HEALTH_STATUS_UNHEALTHY
+    HEALTH_STATUS_UNHEALTHY,
+    HEALTH_STATUS_UNKNOWN
 )
 
 # Set up a logger for the component, which helps in logging error and debug messages
@@ -65,8 +67,13 @@ class MarineWeatherCurrentSensor(SensorEntity):
         return self._name
 
     @property
+    def native_value(self):
+        """Return the native value of the sensor (e.g., swell wave height in meters)."""
+        return self._state
+
+    @property
     def state(self):
-        """Return the current state of the sensor (e.g., swell wave height in meters)."""
+        """Return the current state of the sensor (deprecated, use native_value)."""
         return self._state
 
     @property
@@ -76,13 +83,28 @@ class MarineWeatherCurrentSensor(SensorEntity):
 
     @property
     def device_class(self):
-        """Specify that this sensor is a measurement sensor."""
-        return "measurement"
+        """Specify that this sensor is a distance measurement sensor."""
+        return SensorDeviceClass.DISTANCE
+
+    @property
+    def state_class(self):
+        """Return the state class for this sensor."""
+        return SensorStateClass.MEASUREMENT
+
+    @property
+    def native_unit_of_measurement(self):
+        """The native unit of measurement for the sensor's state (meters for swell wave height)."""
+        return UnitOfLength.METERS
 
     @property
     def unit_of_measurement(self):
         """The unit of measurement for the sensor's state (meters for swell wave height)."""
-        return LENGTH_METERS
+        return UnitOfLength.METERS
+
+    @property
+    def suggested_display_precision(self):
+        """Return the suggested number of decimal places for display."""
+        return 2
 
     @property
     def unique_id(self):
@@ -93,6 +115,28 @@ class MarineWeatherCurrentSensor(SensorEntity):
     def icon(self):
         """Set the icon used in the frontend for this sensor (surfing icon in this case)."""
         return "mdi:surfing"
+
+    @property
+    def entity_description(self):
+        """Return entity description."""
+        return f"Marine weather sensor for {self._name}"
+
+    @property
+    def available(self):
+        """Return True if entity is available."""
+        return self._state is not None
+
+    @property
+    def device_info(self):
+        """Return device information for grouping sensors."""
+        return {
+            "identifiers": {(DOMAIN, f"marine_weather_{self.latitude}_{self.longitude}")},
+            "name": f"Marine Weather {self._name}",
+            "manufacturer": "Open Meteo",
+            "model": "Marine Weather Station",
+            "sw_version": "1.1",
+            "entry_type": "service"
+        }
 
     async def async_added_to_hass(self):
         """
@@ -210,13 +254,19 @@ class MarineWeatherCurrentSensor(SensorEntity):
                         self._attributes = {
                             "latitude": self.latitude,
                             "longitude": self.longitude,
-                            "swell_wave_height": f"{swell_wave_height} m" if swell_wave_height is not None else "Unknown",
+                            "swell_wave_height": swell_wave_height,
+                            "swell_wave_height_unit": UnitOfLength.METERS,
                             "swell_wave_direction": swell_wave_direction_degrees,
+                            "swell_wave_direction_unit": DEGREE,
                             "swell_wave_direction_name": degrees_to_compass(swell_wave_direction_degrees),
-                            "swell_wave_period": f"{swell_wave_period} s" if swell_wave_period is not None else "Unknown",
-                            "swell_wave_peak_period": f"{swell_wave_peak_period} s" if swell_wave_peak_period is not None else "Unknown",
-                            "wave_height": f"{wave_height} m" if wave_height is not None else "Unknown",
+                            "swell_wave_period": swell_wave_period,
+                            "swell_wave_period_unit": UnitOfTime.SECONDS,
+                            "swell_wave_peak_period": swell_wave_peak_period,
+                            "swell_wave_peak_period_unit": UnitOfTime.SECONDS,
+                            "wave_height": wave_height,
+                            "wave_height_unit": UnitOfLength.METERS,
                             "wave_direction": wave_direction_degrees,
+                            "wave_direction_unit": DEGREE,
                             "wave_direction_name": degrees_to_compass(wave_direction_degrees),
                             "timezone": data.get("timezone", "Unknown"),
                             "models": "best_match",
@@ -226,9 +276,12 @@ class MarineWeatherCurrentSensor(SensorEntity):
                         if health_monitor:
                             self._attributes["api_health_status"] = health_monitor.status
                             metrics = health_monitor.metrics
-                            self._attributes["api_success_rate"] = f"{metrics['success_rate']:.1f}%"
-                            if metrics['average_response_time']:
-                                self._attributes["api_avg_response_time"] = f"{metrics['average_response_time']:.2f}s"
+                            self._attributes["api_success_rate"] = metrics.get('success_rate', 0)
+                            self._attributes["api_success_rate_unit"] = PERCENTAGE
+                            self._attributes["api_avg_response_time"] = metrics.get('average_response_time', 0)
+                            self._attributes["api_avg_response_time_unit"] = UnitOfTime.SECONDS
+                            self._attributes["api_total_requests"] = metrics.get('total_requests', 0)
+                            self._attributes["api_failed_requests"] = metrics.get('failed_requests', 0)
                         
                     else:
                         _LOGGER.error(f"No 'current' data found in the API response for {self._name}. Response: {data}")
@@ -238,27 +291,25 @@ class MarineWeatherCurrentSensor(SensorEntity):
             # On error, trigger health check if monitor is available
             if health_monitor:
                 asyncio.create_task(health_monitor.check_health())
-            self._state = None
-            self._attributes = {}
+            # Don't clear existing data on HTTP errors, keep last known good values
         except aiohttp.ClientError as req_err:
             _LOGGER.error(f"Request exception occurred while fetching current data for {self._name}: {req_err}")
             # On error, trigger health check if monitor is available
             if health_monitor:
                 asyncio.create_task(health_monitor.check_health())
-            self._state = None
-            self._attributes = {}
+            # Don't clear existing data on client errors, keep last known good values
         except asyncio.TimeoutError:
             _LOGGER.error(f"Timeout occurred while fetching current data for {self._name}")
             # On timeout, trigger health check if monitor is available
             if health_monitor:
                 asyncio.create_task(health_monitor.check_health())
-            self._state = None
-            self._attributes = {}
+            # Don't clear existing data on timeout, keep last known good values
         except ValueError as json_err:
             _LOGGER.error(f"JSON decode error occurred while processing the response for {self._name}: {json_err}")
             # On JSON error, trigger health check if monitor is available
             if health_monitor:
                 asyncio.create_task(health_monitor.check_health())
+            # Clear data on JSON errors as the response is corrupted
             self._state = None
             self._attributes = {}
         except Exception as e:
@@ -266,6 +317,7 @@ class MarineWeatherCurrentSensor(SensorEntity):
             # On unexpected error, trigger health check if monitor is available
             if health_monitor:
                 asyncio.create_task(health_monitor.check_health())
+            # Clear data on unexpected errors
             self._state = None
             self._attributes = {}
 
@@ -288,8 +340,13 @@ class APIHealthSensor(SensorEntity):
         return self._name
         
     @property
-    def state(self):
+    def native_value(self):
         """Return the current API health status."""
+        return self._state
+        
+    @property
+    def state(self):
+        """Return the current API health status (deprecated, use native_value)."""
         return self._state
         
     @property
@@ -300,7 +357,27 @@ class APIHealthSensor(SensorEntity):
     @property
     def device_class(self):
         """Return the device class."""
+        return SensorDeviceClass.ENUM
+        
+    @property
+    def state_class(self):
+        """Return the state class (None for diagnostic sensors)."""
         return None
+        
+    @property
+    def entity_category(self):
+        """Return the entity category."""
+        return EntityCategory.DIAGNOSTIC
+        
+    @property
+    def options(self):
+        """Return the list of possible states."""
+        return [
+            HEALTH_STATUS_HEALTHY,
+            HEALTH_STATUS_DEGRADED,
+            HEALTH_STATUS_UNHEALTHY,
+            HEALTH_STATUS_UNKNOWN
+        ]
         
     @property
     def unique_id(self):
@@ -318,6 +395,28 @@ class APIHealthSensor(SensorEntity):
             return "mdi:close-circle"
         else:
             return "mdi:help-circle"
+
+    @property
+    def entity_description(self):
+        """Return entity description."""
+        return "API health status for Open Meteo Marine Weather service"
+
+    @property
+    def available(self):
+        """Return True if entity is available."""
+        return self._health_monitor is not None
+
+    @property
+    def device_info(self):
+        """Return device information for grouping sensors."""
+        return {
+            "identifiers": {(DOMAIN, "api_health_monitor")},
+            "name": "Open Meteo Marine Weather API",
+            "manufacturer": "Open Meteo",
+            "model": "API Health Monitor",
+            "sw_version": "1.1",
+            "entry_type": "service"
+        }
             
     async def async_added_to_hass(self):
         """Called when entity is added to hass."""
@@ -333,9 +432,20 @@ class APIHealthSensor(SensorEntity):
         """Update the sensor with current health status."""
         if self._health_monitor:
             self._state = self._health_monitor.status
-            self._attributes = self._health_monitor.metrics
+            metrics = self._health_monitor.metrics
+            self._attributes = {
+                "success_rate": metrics.get('success_rate', 0),
+                "success_rate_unit": PERCENTAGE,
+                "average_response_time": metrics.get('average_response_time', 0),
+                "average_response_time_unit": UnitOfTime.SECONDS,
+                "total_requests": metrics.get('total_requests', 0),
+                "failed_requests": metrics.get('failed_requests', 0),
+                "consecutive_failures": metrics.get('consecutive_failures', 0),
+                "last_success": metrics.get('last_success'),
+                "last_failure": metrics.get('last_failure'),
+            }
         else:
-            self._state = "unavailable"
+            self._state = HEALTH_STATUS_UNKNOWN
             self._attributes = {}
 
 
