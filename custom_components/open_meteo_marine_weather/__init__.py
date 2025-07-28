@@ -215,12 +215,6 @@ async def async_setup(hass: HomeAssistant, config: dict) -> bool:
     try:
         hass.data.setdefault(DOMAIN, {})
         
-        # Initialize global health monitor
-        if "health_monitor" not in hass.data[DOMAIN]:
-            health_monitor = APIHealthMonitor(hass)
-            hass.data[DOMAIN]["health_monitor"] = health_monitor
-            await health_monitor.start_monitoring()
-        
         # Register reload service
         async def async_reload_service_handler(service_call: ServiceCall) -> None:
             """Handle reload service call."""
@@ -269,7 +263,14 @@ async def async_setup(hass: HomeAssistant, config: dict) -> bool:
         async def async_health_check_service_handler(service_call: ServiceCall) -> None:
             """Handle manual API health check service call."""
             _LOGGER.info("Manual API health check requested")
-            health_monitor = hass.data[DOMAIN].get("health_monitor")
+            
+            # Find any active health monitor from loaded config entries
+            health_monitor = None
+            for entry_id, entry_data in hass.data.get(DOMAIN, {}).items():
+                if isinstance(entry_data, dict) and "health_monitor" in entry_data:
+                    health_monitor = entry_data["health_monitor"]
+                    break
+            
             if health_monitor:
                 is_healthy = await health_monitor.check_health()
                 metrics = health_monitor.metrics
@@ -284,7 +285,7 @@ async def async_setup(hass: HomeAssistant, config: dict) -> bool:
                     }
                 )
             else:
-                _LOGGER.error("Health monitor not available")
+                _LOGGER.error("No health monitor available (no active config entries)")
         
         async_register_admin_service(
             hass,
@@ -366,23 +367,18 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             "coordinators": []
         }
         
-        # Ensure health monitor is available
-        if "health_monitor" not in hass.data[DOMAIN]:
-            health_monitor = APIHealthMonitor(hass)
-            hass.data[DOMAIN]["health_monitor"] = health_monitor
-            await health_monitor.start_monitoring()
+        # Create and initialize health monitor for this entry
+        health_monitor = APIHealthMonitor(hass)
+        hass.data[DOMAIN][entry.entry_id]["health_monitor"] = health_monitor
+        await health_monitor.start_monitoring()
         
         # Perform initial health check before loading platforms
-        health_monitor = hass.data[DOMAIN]["health_monitor"]
         initial_health = await health_monitor.check_health()
         
         if not initial_health:
             _LOGGER.warning("Initial API health check failed, but continuing with setup")
         else:
             _LOGGER.info("Initial API health check passed")
-        
-        # Store health monitor reference for this entry
-        hass.data[DOMAIN][entry.entry_id]["health_monitor"] = health_monitor
         
         # Load related platforms with timeout and retry logic
         max_retries = 3
@@ -509,7 +505,16 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             except asyncio.TimeoutError:
                 _LOGGER.warning("Session/coordinator cleanup timed out during unload")
         
-        # 4. Unload platforms with timeout
+        # 4. Stop and cleanup health monitor for this entry
+        health_monitor = entry_data.get("health_monitor")
+        if health_monitor:
+            _LOGGER.debug("Stopping health monitor for this entry")
+            try:
+                await health_monitor.stop_monitoring()
+            except Exception as e:
+                _LOGGER.warning(f"Error stopping health monitor during unload: {e}")
+        
+        # 5. Unload platforms with timeout
         try:
             async with asyncio.timeout(15):  # 15 second timeout for platform unload
                 unload_ok = await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
@@ -517,29 +522,12 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             _LOGGER.error("Platform unload timed out for entry %s", entry.entry_id)
             return False
         
-        # 5. Clean up entry data if unload was successful
+        # 6. Clean up entry data if unload was successful
         if unload_ok and DOMAIN in hass.data:
             # Remove this specific entry's data
             hass.data[DOMAIN].pop(entry.entry_id, None)
             
-            # Check if this was the last entry and clean up global resources
-            remaining_entries = [
-                key for key in hass.data[DOMAIN].keys() 
-                if key != "health_monitor" and isinstance(hass.data[DOMAIN][key], dict)
-            ]
-            
-            # If no more entries, stop health monitor
-            if not remaining_entries and "health_monitor" in hass.data[DOMAIN]:
-                health_monitor = hass.data[DOMAIN]["health_monitor"]
-                try:
-                    await health_monitor.stop_monitoring()
-                    _LOGGER.debug("Stopped API health monitoring")
-                except Exception as e:
-                    _LOGGER.warning(f"Error stopping health monitor: {e}")
-                finally:
-                    hass.data[DOMAIN].pop("health_monitor", None)
-            
-            # If no more entries and no health monitor, remove the domain data entirely
+            # If no more entries, remove the domain data entirely
             if not hass.data[DOMAIN]:
                 hass.data.pop(DOMAIN, None)
         

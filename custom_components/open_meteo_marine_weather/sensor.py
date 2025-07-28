@@ -212,10 +212,8 @@ class MarineWeatherCurrentSensor(SensorEntity):
         Fetch new data from the API for the sensor.
         This method runs asynchronously to avoid blocking Home Assistant's event loop.
         """
-        # Get health monitor if available
-        health_monitor = None
-        if hasattr(self, 'hass') and DOMAIN in self.hass.data:
-            health_monitor = self.hass.data[DOMAIN].get("health_monitor")
+        # Get health monitor from sensor instance
+        health_monitor = getattr(self, '_health_monitor', None)
         
         # Check API health before making request
         if health_monitor and not health_monitor.is_healthy:
@@ -473,10 +471,11 @@ async def async_setup_entry(hass, entry, async_add_entities):
     """Set up Marine Weather sensors from a config entry."""
     sensors = []
 
-    # Get health monitor from hass data
+    # Get health monitor from entry data
     health_monitor = None
-    if DOMAIN in hass.data and "health_monitor" in hass.data[DOMAIN]:
-        health_monitor = hass.data[DOMAIN]["health_monitor"]
+    if DOMAIN in hass.data and entry.entry_id in hass.data[DOMAIN]:
+        entry_data = hass.data[DOMAIN][entry.entry_id]
+        health_monitor = entry_data.get("health_monitor")
 
     # Create API health sensor if health monitor is available
     if health_monitor:
@@ -495,6 +494,8 @@ async def async_setup_entry(hass, entry, async_add_entities):
         
         # Store entry_id in sensor for cleanup tracking
         sensor._entry_id = entry.entry_id
+        # Store health monitor reference in sensor for health checks
+        sensor._health_monitor = health_monitor
         sensors.append(sensor)
 
     # Add all created sensors to Home Assistant
