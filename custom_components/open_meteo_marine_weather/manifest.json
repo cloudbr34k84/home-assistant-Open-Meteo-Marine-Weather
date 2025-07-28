@@ -1,9 +1,15 @@
 {
-    "domain": "marine_weather",
+    "domain": "open_meteo_marine_weather",
     "name": "Open Meteo Marine Weather",
     "version": "1.1",
     "documentation": "https://github.com/cloudbr34k84/Open-Meteo-Marine-Weather",
+    "issue_tracker": "https://github.com/cloudbr34k84/Open-Meteo-Marine-Weather/issues",
+    "loggers": ["open_meteo_marine_weather"],
     "dependencies": [],
     "codeowners": ["@cloudbr34k84"],
-    "requirements": ["aiohttp", "async-timeout"]
+    "requirements": ["aiohttp", "async-timeout"],
+    "iot_class": "cloud_polling",
+    "integration_type": "service",
+    "config_flow": false
+
 }
