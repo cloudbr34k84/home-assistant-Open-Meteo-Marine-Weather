@@ -10,5 +10,6 @@
     "requirements": ["aiohttp", "async-timeout"],
     "iot_class": "cloud_polling",
     "integration_type": "service",
-    "config_flow": false
+    "quality_scale": "silver",
+    "config_flow": true
 }
