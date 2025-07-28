@@ -1,7 +1,6 @@
 import logging
 import aiohttp  # Import for asynchronous HTTP requests
 import asyncio  # Import for using asyncio features
-import async_timeout  # Add this import
 from datetime import timedelta
 from homeassistant.components.sensor import SensorEntity, SensorStateClass, SensorDeviceClass
 from homeassistant.const import UnitOfLength, UnitOfTime, DEGREE, PERCENTAGE
@@ -63,7 +62,7 @@ class MarineWeatherDataUpdateCoordinator(DataUpdateCoordinator):
         try:
             session = async_get_clientsession(self.hass)
             
-            async with async_timeout.timeout(10):
+            async with asyncio.timeout(10):
                 url = (
                     f"{API_URL}?latitude={self.location['latitude']}&longitude={self.location['longitude']}"
                     f"&current=wave_height,wave_direction,wave_period,wind_wave_height,wind_wave_direction,"
@@ -326,11 +325,6 @@ class APIHealthSensor(SensorEntity):
     def device_class(self):
         """Return the device class."""
         return SensorDeviceClass.ENUM
-        
-    @property
-    def state_class(self):
-        """Return the state class (None for diagnostic sensors)."""
-        return None
         
     @property
     def entity_category(self):
