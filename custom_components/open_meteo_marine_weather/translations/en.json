@@ -2,18 +2,18 @@
   "config": {
     "step": {
       "user": {
-        "title": "Marine Weather",
-        "description": "Set up Marine Weather integration to fetch current marine weather data.",
+        "title": "Set up Marine Weather",
+        "description": "Configure your Marine Weather integration",
         "data": {
-          "latitude": "Latitude",
-          "longitude": "Longitude"
+          "name": "Integration Name",
+          "locations": "Surf Locations (optional – leave empty to use defaults)"
         }
       }
     },
     "error": {
       "cannot_connect": "Failed to connect to the Marine Weather API",
-      "invalid_auth": "Invalid authentication",
-      "unknown": "Unexpected error"
+      "invalid_locations": "One or more location coordinates are invalid",
+      "unknown": "An unexpected error occurred"
     },
     "abort": {
       "already_configured": "Marine Weather is already configured"
