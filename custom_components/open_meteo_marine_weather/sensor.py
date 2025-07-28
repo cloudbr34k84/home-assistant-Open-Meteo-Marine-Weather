@@ -106,6 +106,44 @@ class MarineWeatherCurrentSensor(SensorEntity):
         self._update_listener = async_track_time_interval(
             self.hass, self.async_update, MIN_TIME_BETWEEN_UPDATES
         )
+        
+        # Track this sensor and its resources for cleanup
+        entry_id = getattr(self, '_entry_id', None)
+        if entry_id and DOMAIN in self.hass.data and entry_id in self.hass.data[DOMAIN]:
+            self.hass.data[DOMAIN][entry_id]["sensors"].append(self)
+            self.hass.data[DOMAIN][entry_id]["listeners"].append(self._update_listener)
+
+    async def async_will_remove_from_hass(self):
+        """
+        This method is called when the sensor is about to be removed from Home Assistant.
+        It performs cleanup of resources to prevent memory leaks.
+        """
+        try:
+            # Cancel the scheduled updates
+            if hasattr(self, '_update_listener') and self._update_listener:
+                self._update_listener()
+                self._update_listener = None
+                _LOGGER.debug(f"Removed update listener for sensor {self._name}")
+            
+            # Clean up debouncer
+            if self._debouncer:
+                # Cancel any pending debounced calls
+                try:
+                    await self._debouncer.async_shutdown()
+                except Exception as e:
+                    _LOGGER.debug(f"Error shutting down debouncer for {self._name}: {e}")
+                finally:
+                    self._debouncer = None
+                    _LOGGER.debug(f"Cleaned up debouncer for sensor {self._name}")
+            
+            # Clear state and attributes
+            self._state = None
+            self._attributes = {}
+            
+            _LOGGER.debug(f"Successfully cleaned up sensor {self._name}")
+            
+        except Exception as e:
+            _LOGGER.error(f"Error during cleanup of sensor {self._name}: {e}")
 
     async def async_update(self):
         """
@@ -200,7 +238,28 @@ async def async_setup_platform(hass, config, async_add_entities, discovery_info=
         name = location["name"]
 
         # Create the current condition sensor and add it to the list of sensors
-        sensors.append(MarineWeatherCurrentSensor(latitude, longitude, f"{name} Current"))
+        sensor = MarineWeatherCurrentSensor(latitude, longitude, f"{name} Current")
+        sensors.append(sensor)
 
     # Add all created sensors to Home Assistant in an async way
+    async_add_entities(sensors, True)
+
+async def async_setup_entry(hass, entry, async_add_entities):
+    """Set up Marine Weather sensors from a config entry."""
+    sensors = []
+
+    # Loop through the hardcoded locations and create sensors for each
+    for location in LOCATIONS:
+        latitude = location["latitude"]
+        longitude = location["longitude"]
+        name = location["name"]
+
+        # Create the current condition sensor
+        sensor = MarineWeatherCurrentSensor(latitude, longitude, f"{name} Current")
+        
+        # Store entry_id in sensor for cleanup tracking
+        sensor._entry_id = entry.entry_id
+        sensors.append(sensor)
+
+    # Add all created sensors to Home Assistant
     async_add_entities(sensors, True)
