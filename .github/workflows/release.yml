@@ -1,0 +1,24 @@
+name: Release
+
+on:
+  release:
+    types: [ published ]
+
+jobs:
+  build-and-upload:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v3
+
+    - name: Create release zip
+      run: |
+        cd custom_components/open_meteo_marine_weather
+        zip -r ../../open_meteo_marine_weather.zip .
+
+    - name: Upload release asset
+      uses: softprops/action-gh-release@v1
+      with:
+        files: open_meteo_marine_weather.zip
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
