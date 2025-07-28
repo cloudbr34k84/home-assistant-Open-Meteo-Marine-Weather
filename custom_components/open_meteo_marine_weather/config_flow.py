@@ -25,7 +25,7 @@ DEFAULT_LOCATIONS = [
 
 STEP_USER_DATA_SCHEMA = vol.Schema(
     {
-        vol.Required("name", default="Marine Weather"): cv.string,
+        vol.Required("name", default="Open Meteo Marine Weather"): cv.string,
         vol.Optional("locations", default=""): cv.string,
     }
 )
