@@ -2,12 +2,9 @@ import logging
 import asyncio
 import time
 from datetime import datetime, timedelta
-from homeassistant.core import HomeAssistant, ServiceCall
+from homeassistant.core import HomeAssistant
 from homeassistant.config_entries import ConfigEntry, ConfigEntryState
-from homeassistant.helpers import discovery
 from homeassistant.exceptions import ConfigEntryNotReady
-from homeassistant.helpers.reload import async_integration_yaml_config
-from homeassistant.helpers.service import async_register_admin_service
 from homeassistant.helpers.network import async_get_source_ip
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.event import async_track_time_interval
@@ -209,112 +206,6 @@ class APIHealthMonitor:
                 }
             )
 
-
-async def async_setup(hass: HomeAssistant, config: dict) -> bool:
-    """Set up the Marine Weather integration."""
-    try:
-        hass.data.setdefault(DOMAIN, {})
-        
-        # Register reload service
-        async def async_reload_service_handler(service_call: ServiceCall) -> None:
-            """Handle reload service call."""
-            _LOGGER.info("Reloading Open Meteo Marine Weather integration")
-            config_entries = hass.config_entries.async_entries(DOMAIN)
-            reload_tasks = [
-                hass.config_entries.async_reload(entry.entry_id)
-                for entry in config_entries
-            ]
-            if reload_tasks:
-                await asyncio.gather(*reload_tasks)
-        
-        # Register cleanup service for manual resource cleanup
-        async def async_cleanup_service_handler(service_call: ServiceCall) -> None:
-            """Handle manual cleanup service call."""
-            _LOGGER.info("Manual cleanup requested for Open Meteo Marine Weather integration")
-            try:
-                # Force cleanup of any lingering resources
-                for entry_id, entry_data in hass.data.get(DOMAIN, {}).items():
-                    if isinstance(entry_data, dict):
-                        # Cancel any running tasks
-                        for task in entry_data.get("tasks", []):
-                            if not task.done():
-                                task.cancel()
-                        
-                        # Remove listeners
-                        for listener in entry_data.get("listeners", []):
-                            try:
-                                listener()
-                            except Exception:
-                                pass
-                                
-                        # Close sessions
-                        for session in entry_data.get("sessions", []):
-                            try:
-                                if hasattr(session, 'close') and not session.closed:
-                                    await session.close()
-                            except Exception:
-                                pass
-                
-                _LOGGER.info("Manual cleanup completed")
-            except Exception as e:
-                _LOGGER.error(f"Error during manual cleanup: {e}")
-        
-        # Register API health check service
-        async def async_health_check_service_handler(service_call: ServiceCall) -> None:
-            """Handle manual API health check service call."""
-            _LOGGER.info("Manual API health check requested")
-            
-            # Find any active health monitor from loaded config entries
-            health_monitor = None
-            for entry_id, entry_data in hass.data.get(DOMAIN, {}).items():
-                if isinstance(entry_data, dict) and "health_monitor" in entry_data:
-                    health_monitor = entry_data["health_monitor"]
-                    break
-            
-            if health_monitor:
-                is_healthy = await health_monitor.check_health()
-                metrics = health_monitor.metrics
-                _LOGGER.info(f"API health check completed. Status: {metrics['status']}, Healthy: {is_healthy}")
-                
-                # Fire event with results
-                hass.bus.async_fire(
-                    f"{DOMAIN}_manual_health_check_completed",
-                    {
-                        "is_healthy": is_healthy,
-                        "metrics": metrics
-                    }
-                )
-            else:
-                _LOGGER.error("No health monitor available (no active config entries)")
-        
-        async_register_admin_service(
-            hass,
-            DOMAIN,
-            "reload",
-            async_reload_service_handler,
-        )
-        
-        async_register_admin_service(
-            hass,
-            DOMAIN,
-            "cleanup",
-            async_cleanup_service_handler,
-        )
-        
-        async_register_admin_service(
-            hass,
-            DOMAIN,
-            "health_check",
-            async_health_check_service_handler,
-        )
-        
-        if DOMAIN in config:
-            _LOGGER.debug("Configuring Marine Weather integration from YAML configuration.")
-            await discovery.async_load_platform(hass, "sensor", DOMAIN, {}, config)
-        return True
-    except Exception as err:
-        _LOGGER.error("Error setting up Marine Weather integration: %s", err)
-        return False
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Set up Marine Weather from a config entry."""

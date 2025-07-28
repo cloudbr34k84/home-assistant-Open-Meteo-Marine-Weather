@@ -411,26 +411,6 @@ class APIHealthSensor(SensorEntity):
             self._attributes = {}
 
 
-async def async_setup_platform(hass, config, async_add_entities, discovery_info=None):
-    """
-    Set up the Marine Weather sensors asynchronously.
-    Creates a sensor for each predefined location in LOCATIONS.
-    """
-    sensors = []
-
-    # Loop through the hardcoded locations and create sensors for each
-    for location in LOCATIONS:
-        latitude = location["latitude"]
-        longitude = location["longitude"]
-        name = location["name"]
-
-        # Create the current condition sensor and add it to the list of sensors
-        sensor = MarineWeatherCurrentSensor(latitude, longitude, f"{name} Current")
-        sensors.append(sensor)
-
-    # Add all created sensors to Home Assistant in an async way
-    async_add_entities(sensors, True)
-
 async def async_setup_entry(hass, entry, async_add_entities):
     """Set up Marine Weather sensors from a config entry."""
     sensors = []
