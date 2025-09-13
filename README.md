@@ -1,7 +1,7 @@
 # Open Meteo Marine Weather
+
 ### 🔧 Project Health
 
-```markdown
 [![Validate HACS Integration](https://github.com/cloudbr34k84/Open-Meteo-Marine-Weather/actions/workflows/validate.yml/badge.svg)](https://github.com/cloudbr34k84/Open-Meteo-Marine-Weather/actions/workflows/validate.yml)
 [![hacs_badge](https://img.shields.io/badge/HACS-Custom-orange.svg)](https://github.com/hacs/integration)
 [![GitHub release](https://img.shields.io/github/v/release/cloudbr34k84/Open-Meteo-Marine-Weather)](https://github.com/cloudbr34k84/Open-Meteo-Marine-Weather/releases)
@@ -9,11 +9,9 @@
 ![Python](https://img.shields.io/badge/python-3.11%2B-blue)
 ![HA Version](https://img.shields.io/badge/HA-2023.12%2B-blue)
 ![IoT Class](https://img.shields.io/badge/IoT%20Class-cloud__polling-lightgrey)
-```
 
 ### 📊 Repository & Community
 
-```markdown
 ![Code size](https://img.shields.io/github/languages/code-size/cloudbr34k84/Open-Meteo-Marine-Weather)
 ![Lines of code](https://tokei.rs/b1/github/cloudbr34k84/Open-Meteo-Marine-Weather)
 [![Downloads](https://img.shields.io/github/downloads/cloudbr34k84/Open-Meteo-Marine-Weather/total)](https://github.com/cloudbr34k84/Open-Meteo-Marine-Weather/releases)
@@ -22,7 +20,6 @@
 ![GitHub contributors](https://img.shields.io/github/contributors/cloudbr34k84/Open-Meteo-Marine-Weather)
 ![GitHub forks](https://img.shields.io/github/forks/cloudbr34k84/Open-Meteo-Marine-Weather?style=social)
 ![GitHub stars](https://img.shields.io/github/stars/cloudbr34k84/Open-Meteo-Marine-Weather?style=social)
-```
 ---
 
 <p align="center">
