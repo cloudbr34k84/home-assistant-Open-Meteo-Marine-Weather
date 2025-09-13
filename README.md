@@ -1,7 +1,3 @@
-Here’s the **final README.md** with a **FAQ section** added to preempt the most common issues.
-
----
-
 # Marine Weather Sensor Integration for Home Assistant
 
 ## Quick Start
