@@ -1,4 +1,3 @@
-
 # Marine Weather Sensor Integration for Home Assistant
 
 ## Overview
