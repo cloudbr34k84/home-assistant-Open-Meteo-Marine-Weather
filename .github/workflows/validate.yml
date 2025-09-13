@@ -11,19 +11,9 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
-      - name: Set up Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: "3.11"
-
-      # Install hassfest (manifest & integration validator)
-      - name: Install hassfest
-        run: pip install hassfest
-
       - name: Run hassfest
-        run: hassfest .
+        uses: home-assistant/actions/hassfest@master
 
-      # HACS validation action
       - name: HACS Validation
         uses: hacs/action@main
         with:
