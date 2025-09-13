@@ -18,13 +18,30 @@ It provides current wave and swell conditions for user-defined locations.
 
 ## Installation
 
-1. **Copy files to `custom_components`**
+### Option 1: Manual install (copy files)
 
-   * Place the entire `marine_weather` folder (including `__init__.py`, `sensor.py`, `const.py`, `manifest.json`, and `logo.png`) under:
+Copy the entire `marine_weather` folder (including `__init__.py`, `sensor.py`, `const.py`, `manifest.json`, and `logo.png`) into:
 
-     ```
-     <config>/custom_components/marine_weather/
-     ```
+```
+<config>/custom_components/marine_weather/
+```
+
+### Option 2: Install via HACS (Custom Repository)
+
+1. Go to **HACS → Integrations → Custom Repositories**.
+2. Add the repo:
+
+   ```
+   https://github.com/cloudbr34k84/Open-Meteo-Marine-Weather
+   ```
+
+   * Type: **Integration**
+3. Click **Add**.
+4. Search for **Open Meteo Marine Weather** in HACS and install it.
+5. Restart Home Assistant.
+
+---
+
 
 2. **Check required files**
 
