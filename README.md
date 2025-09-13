@@ -198,48 +198,72 @@ A: Yes. Use `!include_dir_merge_list sensors` in `configuration.yaml` and create
 
 ---
 
+Here’s a cleaned-up roadmap that flows logically, avoids duplicated phases, and naturally integrates the tides/visualization goals.
+
+---
 
 ## 🗺️ Marine Weather Integration Roadmap
 
 ### Phase 1 — Quality & Compliance (short-term)
 
-* [ ] **HACS Approval Readiness**
-  Ensure repo structure, `manifest.json`, `hacs.json`, `brands/`, and workflows are compliant.
-* [ ] **Robust Error Handling**
-  Add clearer warnings when API returns incomplete data (e.g., fallback values or “N/A” attributes instead of empty dicts).
+* [ ] **HACS Approval**
+  Finalize repo structure, `manifest.json`, `hacs.json`, `brands/`, and GitHub workflows.
+* [ ] **Error Handling**
+  Show warnings or fallback values when API returns incomplete data.
 * [ ] **Unit Tests**
-  Add pytest coverage for `degrees_to_compass`, attribute formatting, and error cases.
+  Add pytest coverage for utilities like `degrees_to_compass`, attribute formatting, and error cases.
 
-### Phase 2 — Usability (medium-term)
+---
 
-* [ ] **Config Flow Support**
-  Let users add integration via HA UI instead of YAML. (Your `__init__.py` already has stubs for `async_setup_entry` — this is the next step.)
+### Phase 2 — Usability & Config (medium-term)
+
+* [ ] **Config Flow (UI Setup)**
+  Allow integration to be added via HA UI instead of YAML.
 * [ ] **Options Flow**
-  Allow editing locations/timezones from UI without restarting HA.
-* [ ] **Multiple Data Models**
-  API supports `models=best_match`; add option for users to choose specific models (e.g., ECMWF vs GFS).
-* [ ] **Improved Diagnostics**
-  Extend `diagnostics.py` to show last API response summary, update frequency, and error counts.
+  Edit locations/timezones in UI without restarting.
+* [ ] **Model Selection**
+  Expose API model choice (`best_match`, ECMWF, GFS, etc.).
+* [ ] **Diagnostics Expansion**
+  Show last API response summary, request frequency, and error counts in diagnostics.
 
-### Phase 3 — Data Depth (medium/long-term)
+---
 
-* [ ] **Forecast Entities**
-  Add `sensor` entities for 3h/6h/24h forecast values (wave height, swell, period).
-* [ ] **Wind & Weather Integration**
-  Expose wind wave attributes as separate sensors.
-* [ ] **Attributes → Separate Sensors**
-  Instead of one sensor with attributes, create dedicated entities (`sensor.wave_height`, `sensor.swell_period`) for better dashboard use.
+### Phase 3 — Data Expansion (medium/long-term)
 
-### Phase 4 — Advanced Features (long-term)
+* [ ] **Forecast Sensors**
+  Add entities for 3h/6h/24h forecasts (swell height, wave period, etc.).
+* [ ] **Wind & Weather**
+  Include wind wave attributes or integrate HA’s `weather` entities.
+* [ ] **Separate Sensors**
+  Break out attributes (e.g. `swell_period`, `wave_height`) into standalone sensors for Lovelace usability.
+* [ ] **Tide Integration**
+  Detect and consume existing tide entities (`sensor.local_tide`) alongside marine weather data.
 
-* [ ] **REST Sensor Replacement Mode**
-  Expose your API fetcher as a coordinator so multiple platforms (sensor, binary\_sensor, etc.) can reuse data.
-* [ ] **Adaptive Update Interval**
-  Poll faster during surf hours, slower at night.
-* [ ] **Alerting**
-  Add binary sensors or events (e.g., “Big Swell Alert: >2m”).
-* [ ] **Loveless Card Bundle**
-  Ship a ready-made Lovelace card (waves, swell direction arrows, forecast chart).
+---
 
+### Phase 4 — Visualization & UX (long-term)
+
+* [ ] **Wave + Tide Chart Overlay**
+  Combined chart (time vs tide height + wave height) using Recharts/Plotly.
+* [ ] **Directional Icons**
+  Arrows for swell/wave direction in the frontend.
+* [ ] **Surf Summary**
+  Auto-generate text summaries like:
+  *“3ft clean E swell, 12s period. Low tide 9:45am, rising.”*
+* [ ] **Lovelace Card Bundle**
+  Provide a pre-built Lovelace card showing current/forecast swell, tide, and optional wind.
+* [ ] **Preset Dashboards**
+  Ready-made “Surf Spot” dashboard templates combining weather + tide + wind.
+
+---
+
+### Phase 5 — Advanced Features (future ideas)
+
+* [ ] **REST/Coordinator Refactor**
+  Move API fetch to a DataUpdateCoordinator so other platforms (`binary_sensor`, `weather`, etc.) can reuse data.
+* [ ] **Adaptive Polling**
+  Faster updates during daylight/surf hours, slower overnight.
+* [ ] **Alerts & Automations**
+  Trigger binary sensors/events (e.g. “Big Swell Alert: >2m” or “Tide dropping fast”).
 
 ---
