@@ -1,3 +1,7 @@
+# Open Meteo Marine Weather
+
+[![Validate HACS Integration](https://github.com/cloudbr34k84/Open-Meteo-Marine-Weather/actions/workflows/validate.yml/badge.svg)](https://github.com/cloudbr34k84/Open-Meteo-Marine-Weather/actions/workflows/validate.yml)
+
 # 🌊 Marine Weather Sensor Integration for Home Assistant
 
 <p align="center">
