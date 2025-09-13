@@ -1,29 +1,5 @@
 # Marine Weather Sensor Integration for Home Assistant
 
-## Quick Start
-
-1. Copy the folder `marine_weather` into:
-
-   ```
-   <config>/custom_components/
-   ```
-
-2. Add this to your sensor configuration (see “Configuration” section for details):
-
-   ```yaml
-   - platform: marine_weather
-     locations:
-       - name: "My Beach"
-         latitude: 36.0969
-         longitude: -5.8147
-         timezone: "Europe/Madrid"
-   ```
-
-3. Restart Home Assistant.
-   → You’ll see a sensor called `My Beach Current` with attributes for wave and swell data.
-
----
-
 ## Overview
 
 This custom integration fetches marine weather data from the [Open-Meteo Marine API](https://marine-api.open-meteo.com/v1/marine) and exposes it in Home Assistant as sensors.
@@ -59,6 +35,8 @@ It provides current wave and swell conditions for user-defined locations.
 
 ### Option 1: Inline in `configuration.yaml`
 
+Add the following block directly under `sensor:`:
+
 ```yaml
 sensor:
   - platform: marine_weather
@@ -81,7 +59,7 @@ If you manage sensors in their own YAML files (e.g., `sensors/marine_weather.yam
 sensor: !include_dir_merge_list sensors
 ```
 
-Then in `sensors/marine_weather.yaml`:
+Then create `sensors/marine_weather.yaml` with:
 
 ```yaml
 - platform: marine_weather
@@ -140,27 +118,6 @@ Then in `sensors/marine_weather.yaml`:
   → Check that your YAML includes a valid IANA timezone string (e.g., `Europe/Madrid`).
 * **Entities not showing**
   → Verify YAML syntax, run “Check Configuration” in Developer Tools, then restart Home Assistant.
-
----
-
-## FAQ
-
-**Q: Why can’t I add this integration from the UI?**
-A: This integration does not include a `config_flow.py` file. It only supports YAML configuration.
-
-**Q: My timezone shows as `Australia/Sydney`, but I’m in Europe. Why?**
-A: Older versions hardcoded `Australia/Sydney`. The current version lets you set `timezone:` per location in YAML. Use a valid [IANA timezone string](https://en.wikipedia.org/wiki/List_of_tz_database_time_zones) like `Europe/Madrid`.
-
-**Q: I get `No module named const` errors.**
-A: Make sure `const.py` exists in `custom_components/marine_weather/`. If missing, copy it from the repository or recreate it:
-
-```python
-DOMAIN = "marine_weather"
-API_URL = "https://marine-api.open-meteo.com/v1/marine"
-```
-
-**Q: Can I define locations in multiple YAML files?**
-A: Yes. If you use `!include_dir_merge_list sensors`, you can keep `marine_weather.yaml` separate, just like any other integration.
 
 ---
 
