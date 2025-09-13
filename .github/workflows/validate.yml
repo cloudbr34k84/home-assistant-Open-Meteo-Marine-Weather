@@ -14,14 +14,16 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
-          python-version: "3.13"
+          python-version: "3.11"
 
-      - name: Install dependencies
-        run: pip install git+https://github.com/home-assistant/core@dev
+      # Install hassfest (manifest & integration validator)
+      - name: Install hassfest
+        run: pip install hassfest
 
       - name: Run hassfest
-        run: python3 -m homeassistant.scripts.hassfest .
+        run: hassfest .
 
+      # HACS validation action
       - name: HACS Validation
         uses: hacs/action@main
         with:
