@@ -1,17 +1,35 @@
-[![Validate HACS Integration](https://github.com/cloudbr34k84/Open-Meteo-Marine-Weather/actions/workflows/validate.yml/badge.svg)](https://github.com/cloudbr34k84/Open-Meteo-Marine-Weather/actions/workflows/validate.yml)
-[![hacs_badge](https://img.shields.io/badge/HACS-Custom-orange.svg)](https://github.com/hacs/integration)
-[![GitHub release](https://img.shields.io/github/v/release/cloudbr34k84/Open-Meteo-Marine-Weather)](https://github.com/cloudbr34k84/Open-Meteo-Marine-Weather/releases)
-[![License](https://img.shields.io/github/license/cloudbr34k84/Open-Meteo-Marine-Weather)](./LICENSE)
-![Code size](https://img.shields.io/github/languages/code-size/cloudbr34k84/Open-Meteo-Marine-Weather)
-![Python](https://img.shields.io/badge/python-3.11%2B-blue)
-[![Downloads](https://img.shields.io/github/downloads/cloudbr34k84/Open-Meteo-Marine-Weather/total)](https://github.com/cloudbr34k84/Open-Meteo-Marine-Weather/releases)
-![Lines of code](https://tokei.rs/b1/github/cloudbr34k84/Open-Meteo-Marine-Weather)
-[![GitHub issues](https://img.shields.io/github/issues/cloudbr34k84/Open-Meteo-Marine-Weather)](https://github.com/cloudbr34k84/Open-Meteo-Marine-Weather/issues)
-[![GitHub pull requests](https://img.shields.io/github/issues-pr/cloudbr34k84/Open-Meteo-Marine-Weather)](https://github.com/cloudbr34k84/Open-Meteo-Marine-Weather/pulls)
-![GitHub contributors](https://img.shields.io/github/contributors/cloudbr34k84/Open-Meteo-Marine-Weather)
-![GitHub forks](https://img.shields.io/github/forks/cloudbr34k84/Open-Meteo-Marine-Weather?style=social)
-![HA Version](https://img.shields.io/badge/HA-2023.12%2B-blue)
-![IoT Class](https://img.shields.io/badge/IoT%20Class-cloud__polling-lightgrey)
+<p align="center">
+
+<table>
+  <tr>
+    <td align="center" colspan="7"><b>🔧 Project Health</b></td>
+  </tr>
+  <tr>
+    <td>[![Validate HACS Integration](https://github.com/cloudbr34k84/Open-Meteo-Marine-Weather/actions/workflows/validate.yml/badge.svg)](https://github.com/cloudbr34k84/Open-Meteo-Marine-Weather/actions/workflows/validate.yml)</td>
+    <td>[![hacs_badge](https://img.shields.io/badge/HACS-Custom-orange.svg)](https://github.com/hacs/integration)</td>
+    <td>[![GitHub release](https://img.shields.io/github/v/release/cloudbr34k84/Open-Meteo-Marine-Weather)](https://github.com/cloudbr34k84/Open-Meteo-Marine-Weather/releases)</td>
+    <td>[![License](https://img.shields.io/github/license/cloudbr34k84/Open-Meteo-Marine-Weather)](./LICENSE)</td>
+    <td>![Python](https://img.shields.io/badge/python-3.11%2B-blue)</td>
+    <td>![HA Version](https://img.shields.io/badge/HA-2023.12%2B-blue)</td>
+    <td>![IoT Class](https://img.shields.io/badge/IoT%20Class-cloud__polling-lightgrey)</td>
+  </tr>
+  <tr>
+    <td align="center" colspan="7"><b>📊 Repository & Community</b></td>
+  </tr>
+  <tr>
+    <td>![Code size](https://img.shields.io/github/languages/code-size/cloudbr34k84/Open-Meteo-Marine-Weather)</td>
+    <td>![Lines of code](https://tokei.rs/b1/github/cloudbr34k84/Open-Meteo-Marine-Weather)</td>
+    <td>[![Downloads](https://img.shields.io/github/downloads/cloudbr34k84/Open-Meteo-Marine-Weather/total)](https://github.com/cloudbr34k84/Open-Meteo-Marine-Weather/releases)</td>
+    <td>[![GitHub issues](https://img.shields.io/github/issues/cloudbr34k84/Open-Meteo-Marine-Weather)](https://github.com/cloudbr34k84/Open-Meteo-Marine-Weather/issues)</td>
+    <td>[![GitHub pull requests](https://img.shields.io/github/issues-pr/cloudbr34k84/Open-Meteo-Marine-Weather)](https://github.com/cloudbr34k84/Open-Meteo-Marine-Weather/pulls)</td>
+    <td>![GitHub contributors](https://img.shields.io/github/contributors/cloudbr34k84/Open-Meteo-Marine-Weather)</td>
+    <td>![GitHub stars](https://img.shields.io/github/stars/cloudbr34k84/Open-Meteo-Marine-Weather?style=social)</td>
+  </tr>
+</table>
+
+</p>
+
+---
 
 # Open Meteo Marine Weather
 
