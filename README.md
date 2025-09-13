@@ -165,16 +165,16 @@ Local wind creates short, messy **waves**, while distant storms generate long, o
 
 ## FAQ
 
-**Q: Why can’t I add this integration from the UI?**
+* **Q: Why can’t I add this integration from the UI?**
 A: This integration does not include a config flow. It must be configured via YAML.
 
-**Q: My timezone shows as `Australia/Sydney`, but I’m in Europe. Why?**
+* **Q: My timezone shows as `Australia/Sydney`, but I’m in Europe. Why?**
 A: Use the `timezone:` option in YAML for each location. Use a valid IANA timezone (e.g., `Europe/Madrid`).
 
-**Q: I get “No module named const”?**
+* **Q: I get “No module named const”?**
 A: Make sure `const.py` is inside `custom_components/marine_weather/`.
 
-**Q: Can I define locations in multiple YAML files?**
+* **Q: Can I define locations in multiple YAML files?**
 A: Yes. Use `!include_dir_merge_list sensors` in `configuration.yaml` and create a separate `marine_weather.yaml`.
 
 ---
