@@ -81,31 +81,44 @@ The roadmap is aspirational — not all features are guaranteed, but it reflects
 
 ## Phase 4 — Visualization & UX (long-term)
 
-**Goal:** Provide built-in visualization for surf/tide conditions.
+**Goal:** Deliver a full surf dashboard experience inside Home Assistant by combining marine weather data, tide info, and wind conditions into a dedicated Lovelace card.
+
+* **Marine Wave Card (Core Feature)**
+
+  * Custom Lovelace card (`custom:marine-wave-card`) that visualizes swell, waves, and wind in a surf-report style interface.
+  * Features include:
+
+    * Surf height bars (color-coded).
+    * Swell period overlays (line chart for consistency/quality).
+    * Wind arrows (direction + speed/gusts).
+    * 24-hour rolling history with 6-hour ticks.
+    * Compact, surf-forecast-style presentation.
 
 * **Wave + Tide Chart Overlay**
 
-  * Line/area chart overlaying tide height and wave height.
-  * X-axis = time, Y1 = tide height, Y2 = wave height.
+  * Optionally combine tide entity data with wave forecasts in the same chart (stacked or dual-axis).
+
 * **Directional Icons**
 
-  * Swell/wave direction visualized as arrows.
+  * Graphical compass arrows for swell/wave direction.
+
 * **Surf-Friendly Summary**
 
-  * Auto-generate text like:
+  * Auto-generate plain-text conditions like:
     *“3ft clean E swell, 12s period. Low tide 9:45am, rising.”*
+
 * **Lovelace Card Bundle**
 
-  * Provide `surf-dashboard-card` (custom Lovelace card).
-  * Bundles:
+  * Publish the Marine Wave Card to HACS as a standalone frontend package.
+  * Provide presets that combine:
 
-    * Marine Weather (waves, swell).
-    * Tide integration (if present).
-    * Wind/weather entity (if available).
+    * Marine Weather integration data.
+    * Local tide entity.
+    * Wind/weather entities.
+
 * **Preset Dashboards**
 
-  * Ship a “Surf Spot Dashboard” template.
-  * Pre-wired examples for Sunshine Coast (Alexandra Headlands, Kings Beach, Moffat Beach).
+  * Ready-made “Surf Spot” dashboard templates (e.g., Sunshine Coast example with Alexandra Headlands, Kings Beach, Moffat Beach).
 
 ---
 
