@@ -1,5 +1,8 @@
 # Marine Weather Sensor Integration for Home Assistant
 
+<p align="center">
+  <img src="https://raw.githubusercontent.com/cloudbr34k84/home-assistant-Open-Meteo-Marine-Weather/main/open_meteo_marine_weather_logo.png" width="200">
+</p>
 ## Overview
 
 This custom integration fetches marine weather data from the [Open-Meteo Marine API](https://marine-api.open-meteo.com/v1/marine) and exposes it in Home Assistant as sensors.
