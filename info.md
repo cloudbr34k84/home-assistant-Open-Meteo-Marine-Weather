@@ -2,6 +2,10 @@
 
 This custom integration provides marine weather conditions from the [Open-Meteo Marine API](https://marine-api.open-meteo.com/v1/marine).
 
+## Requirements
+- Home Assistant 2023.12 or later
+- HACS installed (if using HACS option)
+
 ## Features
 
 * Current swell and wave height, direction, and period
@@ -30,7 +34,7 @@ sensor:
         timezone: "Australia/Brisbane"
 ```
 
-## Notes
+## Important Notes
 
 * YAML configuration is required (no UI config flow).
 * Ensure `const.py` is present in `custom_components/marine_weather/`.

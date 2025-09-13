@@ -3,8 +3,6 @@
 [![Validate HACS Integration](https://github.com/cloudbr34k84/Open-Meteo-Marine-Weather/actions/workflows/validate.yml/badge.svg)](https://github.com/cloudbr34k84/Open-Meteo-Marine-Weather/actions/workflows/validate.yml)
 [![hacs_badge](https://img.shields.io/badge/HACS-Custom-orange.svg)](https://github.com/hacs/integration)
 
-# 🌊 Marine Weather Sensor Integration for Home Assistant
-
 <p align="center">
   <img src="https://raw.githubusercontent.com/cloudbr34k84/home-assistant-Open-Meteo-Marine-Weather/main/brands/marine_weather/logo.png" width="200">
 </p>
@@ -24,12 +22,17 @@ It provides current wave and swell conditions for user-defined locations.
 * **Error Handling:** Logs HTTP, request, or JSON errors to the Home Assistant log
 
 ---
+## Requirements
+- Home Assistant 2023.12 or later
+- HACS installed (if using HACS option)
+
+---
 
 ## Installation
 
-### Option 1: Manual install
+### Option 1: Manual Install
 
-Copy the entire `marine_weather` folder (including `__init__.py`, `sensor.py`, `const.py`, `manifest.json`, and `logo.png`) into:
+Copy the `marine_weather` folder (including all files such as `__init__.py`, `sensor.py`, `const.py`, `manifest.json`, and `logo.png`) into:
 
 ```
 <config>/custom_components/marine_weather/
@@ -37,22 +40,22 @@ Copy the entire `marine_weather` folder (including `__init__.py`, `sensor.py`, `
 
 ### Option 2: Install via HACS (Custom Repository)
 
-1. Go to **HACS → Integrations → Custom Repositories**
-2. Add the repo:
+1. In Home Assistant, go to **HACS → Integrations → Custom Repositories**  
+2. Add this repository URL:  
 
    ```
    https://github.com/cloudbr34k84/Open-Meteo-Marine-Weather
    ```
 
-   **Type:** *Integration*
-3. Click **Add**
-4. Search for **Open Meteo Marine Weather** in HACS and install
+  **Type:** *Integration*  
+3. Click **Add**  
+4. Search for **Open Meteo Marine Weather** in HACS and install  
 5. Restart Home Assistant
 
-### Post-install check
+### Post-Install
 
-* Ensure `const.py` is present. This file defines `DOMAIN` and `API_URL`
-* Without it, the integration will fail to load
+- Verify `const.py` is present (defines `DOMAIN` and `API_URL`)  
+- Confirm the integration loads without errors in **Settings → Logs**
 
 ---
 
