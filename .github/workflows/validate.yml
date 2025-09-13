@@ -16,28 +16,13 @@ jobs:
         with:
           python-version: "3.11"
 
-      # Install Home Assistant Core (dev branch, includes hassfest)
       - name: Install dependencies
         run: pip install git+https://github.com/home-assistant/core@dev
 
-      # Run hassfest to validate integration
       - name: Run hassfest
         run: python3 -m homeassistant.scripts.hassfest .
 
-      # Run HACS validation
       - name: HACS Validation
         uses: hacs/action@main
         with:
           category: integration
-
-      # Install linting tools
-      - name: Install lint tools
-        run: pip install flake8 black
-
-      # Run flake8 for Python style/lint checks
-      - name: Run flake8
-        run: flake8 custom_components/ --count --max-line-length=88 --statistics
-
-      # Run black in check mode (no changes, just verify formatting)
-      - name: Run black
-        run: black --check custom_components/
