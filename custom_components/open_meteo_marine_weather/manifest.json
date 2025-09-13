@@ -1,10 +1,10 @@
 {
-    "domain": "marine_weather",
-    "name": "Open Meteo Marine Weather",
-    "version": "1.0",
-    "documentation": "https://github.com/cloudbr34k84/Open-Meteo-Marine-Weather",
-    "dependencies": [],
-    "codeowners": ["@cloudbr34k84"],
-    "requirements": ["requests"],
-    "logo": "logo.png"
+  "domain": "marine_weather",
+  "name": "Open Meteo Marine Weather",
+  "version": "1.0.0",
+  "documentation": "https://github.com/cloudbr34k84/Open-Meteo-Marine-Weather",
+  "dependencies": [],
+  "codeowners": ["@cloudbr34k84"],
+  "config_flow": false,
+  "iot_class": "cloud_polling"
 }
