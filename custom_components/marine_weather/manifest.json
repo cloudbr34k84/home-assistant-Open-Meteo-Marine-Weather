@@ -3,6 +3,7 @@
   "name": "Open Meteo Marine Weather",
   "version": "1.0.0",
   "documentation": "https://github.com/cloudbr34k84/Open-Meteo-Marine-Weather",
+  "issue_tracker": "https://github.com/cloudbr34k84/Open-Meteo-Marine-Weather/issues",
   "dependencies": [],
   "codeowners": ["@cloudbr34k84"],
   "config_flow": false,
