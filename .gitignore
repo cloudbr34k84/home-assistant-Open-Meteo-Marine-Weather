@@ -1,0 +1,49 @@
+# ----------------------------
+# Home Assistant Custom Component Repo
+# ----------------------------
+
+# Python cache and build files
+__pycache__/
+*.py[cod]
+*.egg-info/
+*.egg
+*.pyo
+*.pyd
+*.pkl
+*.log
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# Test / coverage output
+.coverage
+.pytest_cache/
+htmlcov/
+
+# Editor / IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS junk
+.DS_Store
+Thumbs.db
+
+# Build artifacts
+dist/
+build/
+*.zip
+
+# ----------------------------
+# Keep these in Git
+# ----------------------------
+!.github/              # workflows required for CI
+!custom_components/    # your integration code
+!brands/               # logos/icons for your domain
+!README.md
+!LICENSE
+!hacs.json
+!info.md
