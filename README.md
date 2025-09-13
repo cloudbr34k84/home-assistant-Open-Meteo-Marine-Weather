@@ -198,3 +198,48 @@ A: Yes. Use `!include_dir_merge_list sensors` in `configuration.yaml` and create
 
 ---
 
+
+## 🗺️ Marine Weather Integration Roadmap
+
+### Phase 1 — Quality & Compliance (short-term)
+
+* [ ] **HACS Approval Readiness**
+  Ensure repo structure, `manifest.json`, `hacs.json`, `brands/`, and workflows are compliant.
+* [ ] **Robust Error Handling**
+  Add clearer warnings when API returns incomplete data (e.g., fallback values or “N/A” attributes instead of empty dicts).
+* [ ] **Unit Tests**
+  Add pytest coverage for `degrees_to_compass`, attribute formatting, and error cases.
+
+### Phase 2 — Usability (medium-term)
+
+* [ ] **Config Flow Support**
+  Let users add integration via HA UI instead of YAML. (Your `__init__.py` already has stubs for `async_setup_entry` — this is the next step.)
+* [ ] **Options Flow**
+  Allow editing locations/timezones from UI without restarting HA.
+* [ ] **Multiple Data Models**
+  API supports `models=best_match`; add option for users to choose specific models (e.g., ECMWF vs GFS).
+* [ ] **Improved Diagnostics**
+  Extend `diagnostics.py` to show last API response summary, update frequency, and error counts.
+
+### Phase 3 — Data Depth (medium/long-term)
+
+* [ ] **Forecast Entities**
+  Add `sensor` entities for 3h/6h/24h forecast values (wave height, swell, period).
+* [ ] **Wind & Weather Integration**
+  Expose wind wave attributes as separate sensors.
+* [ ] **Attributes → Separate Sensors**
+  Instead of one sensor with attributes, create dedicated entities (`sensor.wave_height`, `sensor.swell_period`) for better dashboard use.
+
+### Phase 4 — Advanced Features (long-term)
+
+* [ ] **REST Sensor Replacement Mode**
+  Expose your API fetcher as a coordinator so multiple platforms (sensor, binary\_sensor, etc.) can reuse data.
+* [ ] **Adaptive Update Interval**
+  Poll faster during surf hours, slower at night.
+* [ ] **Alerting**
+  Add binary sensors or events (e.g., “Big Swell Alert: >2m”).
+* [ ] **Loveless Card Bundle**
+  Ship a ready-made Lovelace card (waves, swell direction arrows, forecast chart).
+
+
+---
