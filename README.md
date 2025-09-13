@@ -3,6 +3,7 @@
 <p align="center">
   <img src="https://raw.githubusercontent.com/cloudbr34k84/home-assistant-Open-Meteo-Marine-Weather/main/open_meteo_marine_weather_logo.png" width="200">
 </p>
+
 ## Overview
 
 This custom integration fetches marine weather data from the [Open-Meteo Marine API](https://marine-api.open-meteo.com/v1/marine) and exposes it in Home Assistant as sensors.
@@ -107,16 +108,33 @@ Each defined location creates one entity:
 
 Example: `Alexandra Headlands Current`
 
-### Attributes include:
+---
 
-* `swell_wave_height` (m)
-* `swell_wave_direction` (° and compass)
-* `swell_wave_period` (s)
-* `swell_wave_peak_period` (s)
-* `wave_height` (m)
-* `wave_direction` (° and compass)
-* `timezone` (matches configured timezone)
-* `models` (best\_match)
+### Attributes include
+
+* **`swell_wave_height` (m)**
+  The vertical size of distant, organized swells (not local chop). Bigger swell = larger, more powerful surf.
+
+* **`swell_wave_direction` (° and compass)**
+  Direction the swell is coming from. Important for how it hits your coastline (e.g., east swell vs south swell).
+
+* **`swell_wave_period` (s)**
+  Time between swell waves. Longer period = more energy and better surf shape.
+
+* **`swell_wave_peak_period` (s)**
+  The dominant swell interval at the moment (the “strongest” period in the mix).
+
+* **`wave_height` (m)**
+  Overall wave size at the location (includes local wind chop plus swell).
+
+* **`wave_direction` (° and compass)**
+  Direction the breaking waves are coming from at your spot.
+
+* **`timezone`**
+  The timezone used when fetching data. Matches what you set in YAML (e.g., `Australia/Sydney`).
+
+* **`models`**
+  Which forecast model the API used. Usually `"best_match"`.
 
 ---
 
