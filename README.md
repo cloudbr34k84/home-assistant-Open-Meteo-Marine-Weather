@@ -1,4 +1,4 @@
-# Marine Weather Sensor Integration for Home Assistant
+# 🌊 Marine Weather Sensor Integration for Home Assistant
 
 <p align="center">
   <img src="https://raw.githubusercontent.com/cloudbr34k84/home-assistant-Open-Meteo-Marine-Weather/main/open_meteo_marine_weather_logo.png" width="200">

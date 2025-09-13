@@ -1,25 +1,43 @@
+
 # Open Meteo Marine Weather
 
-This integration provides live marine weather conditions from the Open-Meteo Marine API.
+This integration provides live marine weather conditions from the [Open-Meteo Marine API](https://marine-api.open-meteo.com/v1/marine).
 
 ## 🌊 Features
 
-- Swell, wave, and wind wave height & direction
-- Period and peak period tracking
-- Multiple preconfigured surf locations (Sunshine Coast, QLD)
-- Auto-updating sensor data (every 10–30 minutes)
-- Cloud polling, no API key needed
+* Current swell and wave height, direction, and period
+* Peak period tracking for swell and waves
+* Compass direction conversion (degrees → N, NE, etc.)
+* Support for multiple user-defined surf locations
+* Configurable timezone per location
+* Auto-updating sensor data (every 30 minutes)
+* No API key required (free public API)
 
-## 📍 Locations Included
+## 📍 Configuration
 
-- Alexandra Headlands
-- Kings Beach
-- Moffat Beach
+Define your own locations in `configuration.yaml` (or split YAML). Example:
+
+```yaml
+sensor:
+  - platform: marine_weather
+    locations:
+      - name: "Alexandra Headlands"
+        latitude: -26.6715
+        longitude: 153.1006
+        timezone: "Australia/Brisbane"
+      - name: "Kings Beach"
+        latitude: -26.8017
+        longitude: 153.1426
+        timezone: "Australia/Brisbane"
+```
 
 ## ℹ️ Notes
 
-- Free public API (no authentication required)
-- Data updates dynamically
-- Works fully via the UI (no YAML required)
+* This integration currently **requires YAML configuration** (no UI config flow yet).
+* `const.py` must be present in `custom_components/marine_weather`.
+* Data is pulled directly from the Open-Meteo API — no authentication or keys are needed.
+* Restart Home Assistant after adding or changing locations.
 
-Check the README for installation instructions and details.
+See the full README for installation instructions, advanced setup, and troubleshooting.
+
+---
