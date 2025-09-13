@@ -134,7 +134,7 @@ Example: `Alexandra Headlands Current`
 ### Understanding the Difference: Waves vs Swell
 
 <p align="center">
-  <img src="https://bluewatermiles.com/images/extras/waves/swell.webp" width="500">
+  <img src="https://bluewatermiles.com/images/extras/waves/swell.webp" width="800">
 </p>
 
 **Waves (Wind Waves / Chop)**
