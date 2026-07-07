@@ -1,45 +1,29 @@
-# Open Meteo Marine Weather
+# Open-Meteo Marine Weather
 
-This custom integration provides marine weather conditions from the [Open-Meteo Marine API](https://marine-api.open-meteo.com/v1/marine).
+Marine weather conditions from the free [Open-Meteo Marine API](https://marine-api.open-meteo.com/v1/marine) — wave, swell, and wind-wave height, direction, and period, plus a 7-day and 24-hour forecast. No API key required.
 
 ## Requirements
-- Home Assistant 2023.12 or later
-- HACS installed (if using HACS option)
+
+- Home Assistant 2024.4 or later
+- HACS installed
 
 ## Features
 
-* Current swell and wave height, direction, and period
-* Peak period tracking for swell and waves
-* Compass direction conversion (degrees → compass points)
-* Multiple user-defined locations (via YAML)
-* Configurable timezone per location
-* Automatic updates every 30 minutes
-* No API key required (free public API)
+- Configured entirely through the UI — no YAML
+- One device per location, with up to 13 individual sensors (wave/swell/wind-wave height, direction, period)
+- A confirm step at setup shows each sensor's live value so you can skip any that don't apply to your location
+- 7-day daily forecast and 24-hour hourly forecast as sensor attributes
+- All sensors for a location share a single coordinator poll every 30 minutes
+- Any number of locations supported
 
 ## Configuration
 
-Add locations in `configuration.yaml` (or split YAML files):
+1. **Settings → Devices & Services → + Add Integration** → search **Open-Meteo Marine Weather**
+2. Enter a name and coordinates (defaults to your Home Assistant location)
+3. Choose which sensors to add from the live preview
 
-```yaml
-sensor:
-  - platform: marine_weather
-    locations:
-      - name: "Alexandra Headlands"
-        latitude: -26.6715
-        longitude: 153.1006
-        timezone: "Australia/Brisbane"
-      - name: "Kings Beach"
-        latitude: -26.8017
-        longitude: 153.1426
-        timezone: "Australia/Brisbane"
-```
+Repeat for each additional location.
 
-## Important Notes
-
-* YAML configuration is required (no UI config flow).
-* Ensure `const.py` is present in `custom_components/marine_weather/`.
-* Restart Home Assistant after adding or changing locations.
-
-For full installation steps and troubleshooting, see the [README](https://github.com/cloudbr34k84/Open-Meteo-Marine-Weather).
+For full details, troubleshooting, and forecast attribute examples, see the [README](https://github.com/cloudbr34k84/home-assistant-Open-Meteo-Marine-Weather).
 
 ---

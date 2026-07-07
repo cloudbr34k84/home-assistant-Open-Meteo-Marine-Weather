@@ -1,8 +1,6 @@
 {
-  "name": "Open Meteo Marine Weather",
+  "name": "Open-Meteo Marine Weather",
   "render_readme": true,
-  "domains": ["sensor"],
-  "homeassistant": "2023.12.0",
-  "iot_class": "cloud_polling",
-  "content_in_root": false
+  "homeassistant": "2024.4.0",
+  "generated_with": "aurora@aurora-smart-home (ha-integration-dev skill) | https://github.com/tonylofgren/aurora-smart-home"
 }

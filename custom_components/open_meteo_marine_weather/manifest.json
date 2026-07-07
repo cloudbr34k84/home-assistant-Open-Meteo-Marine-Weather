@@ -1,0 +1,14 @@
+{
+  "domain": "open_meteo_marine_weather",
+  "name": "Open-Meteo Marine Weather",
+  "codeowners": ["@cloudbr34k84"],
+  "config_flow": true,
+  "documentation": "https://github.com/cloudbr34k84/Open-Meteo-Marine-Weather",
+  "issue_tracker": "https://github.com/cloudbr34k84/Open-Meteo-Marine-Weather/issues",
+  "iot_class": "cloud_polling",
+  "integration_type": "service",
+  "quality_scale": "bronze",
+  "requirements": [],
+  "version": "1.0.0",
+  "generated_with": "aurora@aurora-smart-home (ha-integration-dev skill) | https://github.com/tonylofgren/aurora-smart-home"
+}

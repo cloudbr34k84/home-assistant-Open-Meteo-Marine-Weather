@@ -1,0 +1,46 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Open-Meteo Marine Weather",
+        "description": "Add a location to monitor marine conditions. Coordinates default to your Home Assistant location.",
+        "data": {
+          "name": "Name",
+          "latitude": "Latitude",
+          "longitude": "Longitude"
+        }
+      },
+      "confirm": {
+        "title": "Choose sensors for {name}",
+        "description": "Each sensor is listed with its current reading. Uncheck any you don't want added — for example, sensors showing \"unknown\" if this location's forecast model doesn't provide that variable.",
+        "data": {
+          "enabled_sensors": "Sensors to add"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Failed to connect to Open-Meteo. Check your internet connection and try again.",
+      "no_marine_data": "Open-Meteo has no marine data for this location. Marine data is only available for coastal and ocean coordinates."
+    },
+    "abort": {
+      "already_configured": "This location is already configured."
+    }
+  },
+  "entity": {
+    "sensor": {
+      "wave_height": { "name": "Wave height" },
+      "wave_direction": { "name": "Wave direction" },
+      "wave_direction_name": { "name": "Wave direction (compass)" },
+      "wave_period": { "name": "Wave period" },
+      "swell_wave_height": { "name": "Swell wave height" },
+      "swell_wave_direction": { "name": "Swell wave direction" },
+      "swell_wave_direction_name": { "name": "Swell wave direction (compass)" },
+      "swell_wave_period": { "name": "Swell wave period" },
+      "swell_wave_peak_period": { "name": "Swell wave peak period" },
+      "wind_wave_height": { "name": "Wind wave height" },
+      "wind_wave_direction": { "name": "Wind wave direction" },
+      "wind_wave_period": { "name": "Wind wave period" },
+      "wind_wave_peak_period": { "name": "Wind wave peak period" }
+    }
+  }
+}
