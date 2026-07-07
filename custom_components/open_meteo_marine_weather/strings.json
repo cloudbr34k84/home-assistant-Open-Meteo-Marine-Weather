@@ -26,6 +26,20 @@
       "already_configured": "This location is already configured."
     }
   },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Surf quality thresholds",
+        "description": "Tune what counts as good surf at this location.",
+        "data": {
+          "min_wave_height": "Minimum ideal wave height (m)",
+          "max_wave_height": "Maximum ideal wave height (m)",
+          "min_period": "Minimum ideal swell period (s)",
+          "max_chop_ratio": "Maximum wind-wave chop ratio"
+        }
+      }
+    }
+  },
   "entity": {
     "sensor": {
       "wave_height": { "name": "Wave height" },
@@ -50,7 +64,24 @@
       "sea_surface_temperature": { "name": "Sea surface temperature" },
       "ocean_current_velocity": { "name": "Ocean current velocity" },
       "ocean_current_direction": { "name": "Ocean current direction" },
-      "ocean_current_direction_name": { "name": "Ocean current direction (compass)" }
+      "ocean_current_direction_name": { "name": "Ocean current direction (compass)" },
+      "tertiary_swell_wave_height": { "name": "Tertiary swell wave height" },
+      "tertiary_swell_wave_direction": { "name": "Tertiary swell wave direction" },
+      "tertiary_swell_wave_direction_name": { "name": "Tertiary swell wave direction (compass)" },
+      "tertiary_swell_wave_period": { "name": "Tertiary swell wave period" },
+      "invert_barometer_height": { "name": "Invert barometer height" },
+      "surf_rating": {
+        "name": "Surf rating",
+        "state": {
+          "poor": "Poor",
+          "fair": "Fair",
+          "good": "Good",
+          "epic": "Epic"
+        }
+      }
+    },
+    "binary_sensor": {
+      "good_surf": { "name": "Good surf" }
     }
   }
 }

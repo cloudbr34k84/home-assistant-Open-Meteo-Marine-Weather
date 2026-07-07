@@ -23,13 +23,19 @@ from homeassistant.const import (
     UnitOfTime,
 )
 from homeassistant.core import HomeAssistant
-from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from . import MarineWeatherConfigEntry
 from .const import CONF_ENABLED_SENSORS, CONF_LATITUDE, CONF_LONGITUDE, DOMAIN
 from .coordinator import MarineWeatherCoordinator
+from .entity import build_device_info
+from .surf_score import (
+    DEFAULT_SURF_OPTIONS,
+    SURF_RATINGS,
+    best_upcoming_window,
+    score_conditions,
+)
 
 COMPASS_DIRECTIONS = [
     "N", "NNE", "NE", "ENE", "E", "ESE", "SE", "SSE",
@@ -241,6 +247,47 @@ SENSOR_DESCRIPTIONS: tuple[MarineSensorDescription, ...] = (
         translation_key="ocean_current_direction_name",
         value_fn=lambda data: degrees_to_compass(data.get("ocean_current_direction")),
     ),
+    MarineSensorDescription(
+        key="tertiary_swell_wave_height",
+        translation_key="tertiary_swell_wave_height",
+        device_class=SensorDeviceClass.DISTANCE,
+        native_unit_of_measurement=UnitOfLength.METERS,
+        state_class=SensorStateClass.MEASUREMENT,
+        value_fn=lambda data: data.get("tertiary_swell_wave_height"),
+        hourly_key="tertiary_swell_wave_height",
+    ),
+    MarineSensorDescription(
+        key="tertiary_swell_wave_direction",
+        translation_key="tertiary_swell_wave_direction",
+        native_unit_of_measurement=DEGREE,
+        value_fn=lambda data: data.get("tertiary_swell_wave_direction"),
+        hourly_key="tertiary_swell_wave_direction",
+    ),
+    MarineSensorDescription(
+        key="tertiary_swell_wave_direction_name",
+        translation_key="tertiary_swell_wave_direction_name",
+        value_fn=lambda data: degrees_to_compass(
+            data.get("tertiary_swell_wave_direction")
+        ),
+    ),
+    MarineSensorDescription(
+        key="tertiary_swell_wave_period",
+        translation_key="tertiary_swell_wave_period",
+        device_class=SensorDeviceClass.DURATION,
+        native_unit_of_measurement=UnitOfTime.SECONDS,
+        state_class=SensorStateClass.MEASUREMENT,
+        value_fn=lambda data: data.get("tertiary_swell_wave_period"),
+        hourly_key="tertiary_swell_wave_period",
+    ),
+    MarineSensorDescription(
+        key="invert_barometer_height",
+        translation_key="invert_barometer_height",
+        device_class=SensorDeviceClass.DISTANCE,
+        native_unit_of_measurement=UnitOfLength.METERS,
+        state_class=SensorStateClass.MEASUREMENT,
+        value_fn=lambda data: data.get("invert_barometer_height"),
+        hourly_key="invert_barometer_height",
+    ),
 )
 
 PREVIOUS_DEFAULT_SENSOR_KEYS = {
@@ -288,9 +335,16 @@ async def async_setup_entry(
         )
 
     async_add_entities(
-        MarineWeatherSensor(coordinator, entry, description)
-        for description in SENSOR_DESCRIPTIONS
-        if description.key in enabled_keys
+        [
+            *(
+                MarineWeatherSensor(coordinator, entry, description)
+                for description in SENSOR_DESCRIPTIONS
+                if description.key in enabled_keys
+            ),
+            # Always added: a derived feature, not a raw passthrough sensor,
+            # so it does not go through the enabled_sensors opt-in checkbox.
+            SurfRatingSensor(coordinator, entry),
+        ]
     )
 
 
@@ -313,14 +367,7 @@ class MarineWeatherSensor(
         super().__init__(coordinator)
         self.entity_description = description
         self._attr_unique_id = f"{entry.unique_id}_{description.key}"
-        self._attr_device_info = DeviceInfo(
-            identifiers={(DOMAIN, entry.unique_id)},
-            name=entry.data.get("name") or entry.title,
-            manufacturer="Open-Meteo",
-            model="Marine Weather",
-            entry_type=None,
-            configuration_url="https://open-meteo.com/en/docs/marine-weather-api",
-        )
+        self._attr_device_info = build_device_info(entry)
 
     @property
     def native_value(self) -> float | str | None:
@@ -361,3 +408,42 @@ class MarineWeatherSensor(
                 for hour in hourly_forecast
             ]
         return attributes
+
+
+class SurfRatingSensor(CoordinatorEntity[MarineWeatherCoordinator], SensorEntity):
+    """Derived Poor/Fair/Good/Epic surf-quality rating for this location."""
+
+    _attr_has_entity_name = True
+    _attr_translation_key = "surf_rating"
+    _attr_icon = "mdi:surfing"
+    _attr_device_class = SensorDeviceClass.ENUM
+    _attr_options = SURF_RATINGS
+
+    def __init__(
+        self, coordinator: MarineWeatherCoordinator, entry: MarineWeatherConfigEntry
+    ) -> None:
+        """Initialize the surf rating sensor."""
+        super().__init__(coordinator)
+        self._attr_unique_id = f"{entry.unique_id}_surf_rating"
+        self._attr_device_info = build_device_info(entry)
+        self._options = {**DEFAULT_SURF_OPTIONS, **entry.options}
+
+    @property
+    def native_value(self) -> str | None:
+        """Return the current surf-quality rating."""
+        if not self.coordinator.data:
+            return None
+        rating, _score, _meets = score_conditions(self.coordinator.data, self._options)
+        return rating
+
+    @property
+    def extra_state_attributes(self) -> dict[str, object] | None:
+        """Return the numeric score and the best upcoming hours."""
+        if not self.coordinator.data:
+            return None
+        _rating, score, _meets = score_conditions(self.coordinator.data, self._options)
+        hourly_forecast = self.coordinator.data.get("hourly_forecast", [])
+        return {
+            "score": score,
+            "next_good_window": best_upcoming_window(hourly_forecast, self._options),
+        }

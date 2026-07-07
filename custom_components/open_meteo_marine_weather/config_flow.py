@@ -12,7 +12,12 @@ from typing import Any
 import aiohttp
 import voluptuous as vol
 
-from homeassistant.config_entries import ConfigFlow, ConfigFlowResult
+from homeassistant.config_entries import (
+    ConfigEntry,
+    ConfigFlow,
+    ConfigFlowResult,
+    OptionsFlow,
+)
 from homeassistant.const import CONF_NAME
 from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
@@ -23,10 +28,15 @@ from .const import (
     CONF_ENABLED_SENSORS,
     CONF_LATITUDE,
     CONF_LONGITUDE,
+    CONF_MAX_CHOP_RATIO,
+    CONF_MAX_WAVE_HEIGHT,
+    CONF_MIN_PERIOD,
+    CONF_MIN_WAVE_HEIGHT,
     CURRENT_VARIABLES,
     DOMAIN,
 )
 from .sensor import SENSOR_DESCRIPTIONS
+from .surf_score import DEFAULT_SURF_OPTIONS
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -44,6 +54,13 @@ class MarineWeatherConfigFlow(ConfigFlow, domain=DOMAIN):
     """Handle a config flow for Open-Meteo Marine Weather."""
 
     VERSION = 1
+
+    @staticmethod
+    def async_get_options_flow(
+        config_entry: ConfigEntry,
+    ) -> MarineWeatherOptionsFlow:
+        """Create the options flow for tuning surf-quality thresholds."""
+        return MarineWeatherOptionsFlow()
 
     def __init__(self) -> None:
         """Initialize the flow."""
@@ -191,3 +208,33 @@ class MarineWeatherConfigFlow(ConfigFlow, domain=DOMAIN):
             return None, "no_marine_data"
 
         return current, None
+
+
+class MarineWeatherOptionsFlow(OptionsFlow):
+    """Let the user tune the surf-quality scoring thresholds."""
+
+    async def async_step_init(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
+        """Show and save the surf-quality threshold form."""
+        if user_input is not None:
+            return self.async_create_entry(data=user_input)
+
+        current = {**DEFAULT_SURF_OPTIONS, **self.config_entry.options}
+        schema = vol.Schema(
+            {
+                vol.Required(
+                    CONF_MIN_WAVE_HEIGHT, default=current[CONF_MIN_WAVE_HEIGHT]
+                ): vol.All(vol.Coerce(float), vol.Range(min=0, max=10)),
+                vol.Required(
+                    CONF_MAX_WAVE_HEIGHT, default=current[CONF_MAX_WAVE_HEIGHT]
+                ): vol.All(vol.Coerce(float), vol.Range(min=0, max=15)),
+                vol.Required(
+                    CONF_MIN_PERIOD, default=current[CONF_MIN_PERIOD]
+                ): vol.All(vol.Coerce(float), vol.Range(min=1, max=30)),
+                vol.Required(
+                    CONF_MAX_CHOP_RATIO, default=current[CONF_MAX_CHOP_RATIO]
+                ): vol.All(vol.Coerce(float), vol.Range(min=0.05, max=1.0)),
+            }
+        )
+        return self.async_show_form(step_id="init", data_schema=schema)

@@ -21,6 +21,12 @@ CONF_LATITUDE = "latitude"
 CONF_LONGITUDE = "longitude"
 CONF_ENABLED_SENSORS = "enabled_sensors"
 
+# Options-flow keys for the surf-quality scoring thresholds.
+CONF_MIN_WAVE_HEIGHT = "min_wave_height"
+CONF_MAX_WAVE_HEIGHT = "max_wave_height"
+CONF_MIN_PERIOD = "min_period"
+CONF_MAX_CHOP_RATIO = "max_chop_ratio"
+
 # Open-Meteo publishes marine data on an hourly cadence; polling more often
 # than every 30 minutes wastes calls without gaining fresher data.
 DEFAULT_SCAN_INTERVAL = timedelta(minutes=30)
@@ -42,10 +48,14 @@ CURRENT_VARIABLES = [
     "secondary_swell_wave_height",
     "secondary_swell_wave_direction",
     "secondary_swell_wave_period",
+    "tertiary_swell_wave_height",
+    "tertiary_swell_wave_direction",
+    "tertiary_swell_wave_period",
     "sea_level_height_msl",
     "sea_surface_temperature",
     "ocean_current_velocity",
     "ocean_current_direction",
+    "invert_barometer_height",
 ]
 
 # The "daily" fields requested from the marine API, used to build the

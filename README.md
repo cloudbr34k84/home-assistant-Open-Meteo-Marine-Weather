@@ -27,6 +27,9 @@ individual sensor entities:
 | Secondary swell wave height | m |
 | Secondary swell wave direction | ° (plus a compass-name sensor) |
 | Secondary swell wave period | s |
+| Tertiary swell wave height | m |
+| Tertiary swell wave direction | ° (plus a compass-name sensor) |
+| Tertiary swell wave period | s |
 | Wind wave height | m |
 | Wind wave direction | ° |
 | Wind wave period | s |
@@ -35,10 +38,39 @@ individual sensor entities:
 | Sea surface temperature | °C |
 | Ocean current velocity | km/h |
 | Ocean current direction | ° (plus a compass-name sensor) |
+| Invert barometer height | m |
 
 All sensors for a location share a single `DataUpdateCoordinator` that polls
 Open-Meteo every 30 minutes, so adding more locations does not multiply the
 number of API calls per location beyond one request each.
+
+### Surf quality entities
+
+Two additional entities are created automatically for every location — they
+are always added and are not part of the sensor-picker checkbox described
+below, since they're a derived feature rather than a raw Open-Meteo variable:
+
+| Entity | What it shows |
+|--------|---------------|
+| **Surf rating** sensor (`sensor.<name>_surf_rating`) | A one-word read of current conditions — `Poor`, `Fair`, `Good`, or `Epic` — computed from wave height, swell period, and how much wind-driven chop is mixed into the swell. Attributes: `score` (the underlying 0–100 number behind the rating) and `next_good_window` (the best 3 upcoming hours in the next 24, each with a datetime, rating, and score) — use this to answer "when's it worth going down?" without reading the raw hourly forecast yourself. |
+| **Good surf** binary sensor (`binary_sensor.<name>_good_surf`) | On/off — `on` only when current conditions strictly meet all three configured thresholds (wave height in range, period long enough, chop low enough). This is the entity to trigger automations/notifications from, since it's a clean boolean rather than a heuristic score. Attributes: `rating` and `score`, same as above. |
+
+Both are computed from the same shared scoring logic and read from data the
+coordinator already fetched — no extra API calls.
+
+**Tuning the thresholds:** each location has its own settings, changeable any
+time without re-adding the integration — go to **Settings → Devices &
+Services → Open-Meteo Marine Weather → (location) → Configure**:
+
+| Setting | Default | Meaning |
+|---------|---------|---------|
+| Minimum ideal wave height (m) | 0.8 | Below this, conditions are scored as too small. |
+| Maximum ideal wave height (m) | 2.0 | Above this, conditions are scored as oversized. |
+| Minimum ideal swell period (s) | 8.0 | Shorter periods score lower — short-period energy is generally wind slop, not clean groundswell. |
+| Maximum wind-wave chop ratio | 0.5 | How much wind-wave height is tolerated relative to swell height before conditions are marked "too choppy." |
+
+Changing these reloads the integration automatically so the new thresholds
+take effect immediately.
 
 ### Forecast attributes
 
@@ -59,6 +91,10 @@ an `hourly_forecast` attribute:
 
 The hourly window is capped at 24 entries to keep state attributes small; the
 limit is the `FORECAST_HOURS` constant in `const.py`.
+
+The **Surf rating** and **Good surf** entities don't follow this convention —
+they expose `score` (and `next_good_window` on the rating sensor) instead, as
+described in [Surf quality entities](#surf-quality-entities) above.
 
 > **Note:** some models/locations do not report every variable, especially
 > peak-period and secondary-swell values (Open-Meteo returns `null` and may
@@ -101,11 +137,13 @@ This integration is configured entirely through the UI — there is no YAML.
    longitude default to your Home Assistant instance location.
 4. Submit. The integration validates that Open-Meteo has marine data for the
    coordinates.
-5. **Choose sensors** — a confirmation step lists all 23 possible sensors
+5. **Choose sensors** — a confirmation step lists all 28 possible sensors
    with their current live reading (e.g. "Wave height: 1.44 m"). Every
    sensor is checked by default; uncheck any you don't want — for example,
    a sensor showing "unknown" because this model/location doesn't provide
-   that variable. Only checked sensors are created.
+   that variable. Only checked sensors are created. The **Surf rating**
+   sensor and **Good surf** binary sensor are added automatically regardless
+   of what's checked here — see [Surf quality entities](#surf-quality-entities).
 
 Add the integration again for each additional location. Each coordinate pair
 can only be added once.

@@ -12,7 +12,7 @@ from homeassistant.core import HomeAssistant
 
 from .coordinator import MarineWeatherCoordinator
 
-PLATFORMS: list[Platform] = [Platform.SENSOR]
+PLATFORMS: list[Platform] = [Platform.SENSOR, Platform.BINARY_SENSOR]
 
 type MarineWeatherConfigEntry = ConfigEntry[MarineWeatherCoordinator]
 
@@ -26,8 +26,19 @@ async def async_setup_entry(
 
     entry.runtime_data = coordinator
 
+    # Reload the entry when surf-quality thresholds are changed via the
+    # options flow, so entities pick up the new values immediately.
+    entry.async_on_unload(entry.add_update_listener(_async_update_listener))
+
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
     return True
+
+
+async def _async_update_listener(
+    hass: HomeAssistant, entry: MarineWeatherConfigEntry
+) -> None:
+    """Reload the config entry when its options change."""
+    await hass.config_entries.async_reload(entry.entry_id)
 
 
 async def async_unload_entry(
