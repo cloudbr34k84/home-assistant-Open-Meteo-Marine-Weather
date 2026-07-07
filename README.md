@@ -19,14 +19,22 @@ individual sensor entities:
 | Wave height | m |
 | Wave direction | ° (plus a compass-name sensor) |
 | Wave period | s |
+| Wave peak period | s |
 | Swell wave height | m |
 | Swell wave direction | ° (plus a compass-name sensor) |
 | Swell wave period | s |
 | Swell wave peak period | s |
+| Secondary swell wave height | m |
+| Secondary swell wave direction | ° (plus a compass-name sensor) |
+| Secondary swell wave period | s |
 | Wind wave height | m |
 | Wind wave direction | ° |
 | Wind wave period | s |
 | Wind wave peak period | s |
+| Sea level height | m |
+| Sea surface temperature | °C |
+| Ocean current velocity | km/h |
+| Ocean current direction | ° (plus a compass-name sensor) |
 
 All sensors for a location share a single `DataUpdateCoordinator` that polls
 Open-Meteo every 30 minutes, so adding more locations does not multiply the
@@ -34,13 +42,16 @@ number of API calls per location beyond one request each.
 
 ### Forecast attributes
 
-Every sensor with a daily/hourly equivalent (all except the two compass-name
-sensors) exposes two forecast attributes:
+Every sensor with a daily equivalent exposes a `forecast` attribute:
 
 - **`forecast`** — 7 daily entries, each
   `{"date": "YYYY-MM-DD", "<sensor_key>": <daily max/dominant value>}`.
   Example: tomorrow's max wave height —
   `{{ state_attr('sensor.<name>_wave_height', 'forecast')[1]['wave_height'] }}`
+
+Every direct Open-Meteo sensor, excluding derived compass-name sensors, exposes
+an `hourly_forecast` attribute:
+
 - **`hourly_forecast`** — next 24 hourly entries, each
   `{"datetime": "YYYY-MM-DDTHH:MM", "<sensor_key>": <hourly value>}`.
   Example: wave height in 3 hours —
@@ -49,11 +60,11 @@ sensors) exposes two forecast attributes:
 The hourly window is capped at 24 entries to keep state attributes small; the
 limit is the `FORECAST_HOURS` constant in `const.py`.
 
-> **Note:** some models/locations do not report `wind_wave_peak_period` or
-> `swell_wave_peak_period` (Open-Meteo returns `null` and marks the unit
-> `"undefined"`). Those sensors — and their forecast entries — correctly
-> show `unknown` in that case; this is a data-availability gap in the
-> underlying model, not an integration bug.
+> **Note:** some models/locations do not report every variable, especially
+> peak-period and secondary-swell values (Open-Meteo returns `null` and may
+> mark the unit `"undefined"`). Those sensors — and their forecast entries —
+> correctly show `unknown` in that case; this is a data-availability gap in
+> the underlying model, not an integration bug.
 
 ## Installation
 
@@ -90,7 +101,7 @@ This integration is configured entirely through the UI — there is no YAML.
    longitude default to your Home Assistant instance location.
 4. Submit. The integration validates that Open-Meteo has marine data for the
    coordinates.
-5. **Choose sensors** — a confirmation step lists all 13 possible sensors
+5. **Choose sensors** — a confirmation step lists all 23 possible sensors
    with their current live reading (e.g. "Wave height: 1.44 m"). Every
    sensor is checked by default; uncheck any you don't want — for example,
    a sensor showing "unknown" because this model/location doesn't provide

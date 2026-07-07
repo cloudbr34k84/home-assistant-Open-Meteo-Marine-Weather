@@ -32,15 +32,25 @@
       "wave_direction": { "name": "Wave direction" },
       "wave_direction_name": { "name": "Wave direction (compass)" },
       "wave_period": { "name": "Wave period" },
+      "wave_peak_period": { "name": "Wave peak period" },
       "swell_wave_height": { "name": "Swell wave height" },
       "swell_wave_direction": { "name": "Swell wave direction" },
       "swell_wave_direction_name": { "name": "Swell wave direction (compass)" },
       "swell_wave_period": { "name": "Swell wave period" },
       "swell_wave_peak_period": { "name": "Swell wave peak period" },
+      "secondary_swell_wave_height": { "name": "Secondary swell wave height" },
+      "secondary_swell_wave_direction": { "name": "Secondary swell wave direction" },
+      "secondary_swell_wave_direction_name": { "name": "Secondary swell wave direction (compass)" },
+      "secondary_swell_wave_period": { "name": "Secondary swell wave period" },
       "wind_wave_height": { "name": "Wind wave height" },
       "wind_wave_direction": { "name": "Wind wave direction" },
       "wind_wave_period": { "name": "Wind wave period" },
-      "wind_wave_peak_period": { "name": "Wind wave peak period" }
+      "wind_wave_peak_period": { "name": "Wind wave peak period" },
+      "sea_level_height_msl": { "name": "Sea level height" },
+      "sea_surface_temperature": { "name": "Sea surface temperature" },
+      "ocean_current_velocity": { "name": "Ocean current velocity" },
+      "ocean_current_direction": { "name": "Ocean current direction" },
+      "ocean_current_direction_name": { "name": "Ocean current direction (compass)" }
     }
   }
 }

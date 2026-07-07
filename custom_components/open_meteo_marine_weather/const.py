@@ -26,6 +26,7 @@ CURRENT_VARIABLES = [
     "wave_height",
     "wave_direction",
     "wave_period",
+    "wave_peak_period",
     "wind_wave_height",
     "wind_wave_direction",
     "wind_wave_period",
@@ -34,6 +35,13 @@ CURRENT_VARIABLES = [
     "swell_wave_direction",
     "swell_wave_period",
     "swell_wave_peak_period",
+    "secondary_swell_wave_height",
+    "secondary_swell_wave_direction",
+    "secondary_swell_wave_period",
+    "sea_level_height_msl",
+    "sea_surface_temperature",
+    "ocean_current_velocity",
+    "ocean_current_direction",
 ]
 
 # The "daily" fields requested from the marine API, used to build the

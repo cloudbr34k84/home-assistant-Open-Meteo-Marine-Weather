@@ -15,7 +15,13 @@ from homeassistant.components.sensor import (
     SensorEntityDescription,
     SensorStateClass,
 )
-from homeassistant.const import DEGREE, UnitOfLength, UnitOfTime
+from homeassistant.const import (
+    DEGREE,
+    UnitOfLength,
+    UnitOfSpeed,
+    UnitOfTemperature,
+    UnitOfTime,
+)
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
@@ -44,8 +50,11 @@ class MarineSensorDescription(SensorEntityDescription):
 
     value_fn: Callable[[dict], float | str | None]
     # Matching key in each daily-forecast entry, e.g. "wave_height_max".
-    # None for sensors with no daily equivalent (the compass-name sensors).
+    # None for sensors with no daily equivalent.
     daily_key: str | None = None
+    # Matching key in each hourly-forecast entry. None for derived sensors
+    # that do not come directly from an Open-Meteo hourly variable.
+    hourly_key: str | None = None
 
 
 SENSOR_DESCRIPTIONS: tuple[MarineSensorDescription, ...] = (
@@ -78,6 +87,15 @@ SENSOR_DESCRIPTIONS: tuple[MarineSensorDescription, ...] = (
         state_class=SensorStateClass.MEASUREMENT,
         value_fn=lambda data: data.get("wave_period"),
         daily_key="wave_period_max",
+    ),
+    MarineSensorDescription(
+        key="wave_peak_period",
+        translation_key="wave_peak_period",
+        device_class=SensorDeviceClass.DURATION,
+        native_unit_of_measurement=UnitOfTime.SECONDS,
+        state_class=SensorStateClass.MEASUREMENT,
+        value_fn=lambda data: data.get("wave_peak_period"),
+        hourly_key="wave_peak_period",
     ),
     MarineSensorDescription(
         key="swell_wave_height",
@@ -119,6 +137,38 @@ SENSOR_DESCRIPTIONS: tuple[MarineSensorDescription, ...] = (
         daily_key="swell_wave_peak_period_max",
     ),
     MarineSensorDescription(
+        key="secondary_swell_wave_height",
+        translation_key="secondary_swell_wave_height",
+        device_class=SensorDeviceClass.DISTANCE,
+        native_unit_of_measurement=UnitOfLength.METERS,
+        state_class=SensorStateClass.MEASUREMENT,
+        value_fn=lambda data: data.get("secondary_swell_wave_height"),
+        hourly_key="secondary_swell_wave_height",
+    ),
+    MarineSensorDescription(
+        key="secondary_swell_wave_direction",
+        translation_key="secondary_swell_wave_direction",
+        native_unit_of_measurement=DEGREE,
+        value_fn=lambda data: data.get("secondary_swell_wave_direction"),
+        hourly_key="secondary_swell_wave_direction",
+    ),
+    MarineSensorDescription(
+        key="secondary_swell_wave_direction_name",
+        translation_key="secondary_swell_wave_direction_name",
+        value_fn=lambda data: degrees_to_compass(
+            data.get("secondary_swell_wave_direction")
+        ),
+    ),
+    MarineSensorDescription(
+        key="secondary_swell_wave_period",
+        translation_key="secondary_swell_wave_period",
+        device_class=SensorDeviceClass.DURATION,
+        native_unit_of_measurement=UnitOfTime.SECONDS,
+        state_class=SensorStateClass.MEASUREMENT,
+        value_fn=lambda data: data.get("secondary_swell_wave_period"),
+        hourly_key="secondary_swell_wave_period",
+    ),
+    MarineSensorDescription(
         key="wind_wave_height",
         translation_key="wind_wave_height",
         device_class=SensorDeviceClass.DISTANCE,
@@ -152,7 +202,62 @@ SENSOR_DESCRIPTIONS: tuple[MarineSensorDescription, ...] = (
         value_fn=lambda data: data.get("wind_wave_peak_period"),
         daily_key="wind_wave_peak_period_max",
     ),
+    MarineSensorDescription(
+        key="sea_level_height_msl",
+        translation_key="sea_level_height_msl",
+        device_class=SensorDeviceClass.DISTANCE,
+        native_unit_of_measurement=UnitOfLength.METERS,
+        state_class=SensorStateClass.MEASUREMENT,
+        value_fn=lambda data: data.get("sea_level_height_msl"),
+        hourly_key="sea_level_height_msl",
+    ),
+    MarineSensorDescription(
+        key="sea_surface_temperature",
+        translation_key="sea_surface_temperature",
+        device_class=SensorDeviceClass.TEMPERATURE,
+        native_unit_of_measurement=UnitOfTemperature.CELSIUS,
+        state_class=SensorStateClass.MEASUREMENT,
+        value_fn=lambda data: data.get("sea_surface_temperature"),
+        hourly_key="sea_surface_temperature",
+    ),
+    MarineSensorDescription(
+        key="ocean_current_velocity",
+        translation_key="ocean_current_velocity",
+        device_class=SensorDeviceClass.SPEED,
+        native_unit_of_measurement=UnitOfSpeed.KILOMETERS_PER_HOUR,
+        state_class=SensorStateClass.MEASUREMENT,
+        value_fn=lambda data: data.get("ocean_current_velocity"),
+        hourly_key="ocean_current_velocity",
+    ),
+    MarineSensorDescription(
+        key="ocean_current_direction",
+        translation_key="ocean_current_direction",
+        native_unit_of_measurement=DEGREE,
+        value_fn=lambda data: data.get("ocean_current_direction"),
+        hourly_key="ocean_current_direction",
+    ),
+    MarineSensorDescription(
+        key="ocean_current_direction_name",
+        translation_key="ocean_current_direction_name",
+        value_fn=lambda data: degrees_to_compass(data.get("ocean_current_direction")),
+    ),
 )
+
+PREVIOUS_DEFAULT_SENSOR_KEYS = {
+    "wave_height",
+    "wave_direction",
+    "wave_direction_name",
+    "wave_period",
+    "swell_wave_height",
+    "swell_wave_direction",
+    "swell_wave_direction_name",
+    "swell_wave_period",
+    "swell_wave_peak_period",
+    "wind_wave_height",
+    "wind_wave_direction",
+    "wind_wave_period",
+    "wind_wave_peak_period",
+}
 
 
 async def async_setup_entry(
@@ -163,12 +268,24 @@ async def async_setup_entry(
     """Set up marine weather sensors from a config entry."""
     coordinator = entry.runtime_data
 
-    # Entries created before the sensor-selection confirm step existed have
-    # no CONF_ENABLED_SENSORS key; default to every sensor for those.
-    enabled_keys = entry.data.get(
-        CONF_ENABLED_SENSORS,
-        [description.key for description in SENSOR_DESCRIPTIONS],
-    )
+    # Entries created before the sensor-selection confirm step existed have no
+    # CONF_ENABLED_SENSORS key. Entries with the previous full default set get
+    # newly added sensors automatically, while custom subsets stay unchanged.
+    all_sensor_keys = [description.key for description in SENSOR_DESCRIPTIONS]
+    enabled_keys = entry.data.get(CONF_ENABLED_SENSORS, all_sensor_keys)
+    if (
+        CONF_ENABLED_SENSORS in entry.data
+        and PREVIOUS_DEFAULT_SENSOR_KEYS.issubset(enabled_keys)
+        and set(enabled_keys) != set(all_sensor_keys)
+    ):
+        enabled_keys = [
+            *enabled_keys,
+            *(key for key in all_sensor_keys if key not in enabled_keys),
+        ]
+        hass.config_entries.async_update_entry(
+            entry,
+            data={**entry.data, CONF_ENABLED_SENSORS: enabled_keys},
+        )
 
     async_add_entities(
         MarineWeatherSensor(coordinator, entry, description)
@@ -216,23 +333,31 @@ class MarineWeatherSensor(
     def extra_state_attributes(self) -> dict[str, list[dict]] | None:
         """Return the daily and hourly forecast for this variable, if any.
 
-        The two compass-name sensors have no daily/hourly equivalent
-        (daily_key is None) and expose no forecast attributes.
+        Derived compass-name sensors have no direct Open-Meteo forecast
+        variable and expose no forecast attributes.
         """
         key = self.entity_description.key
+        if not self.coordinator.data:
+            return None
+
         daily_key = self.entity_description.daily_key
-        if daily_key is None or not self.coordinator.data:
+        hourly_key = self.entity_description.hourly_key
+        if hourly_key is None and daily_key is not None:
+            hourly_key = key
+        if daily_key is None and hourly_key is None:
             return None
 
         daily_forecast = self.coordinator.data.get("daily_forecast", [])
         hourly_forecast = self.coordinator.data.get("hourly_forecast", [])
-        return {
-            "forecast": [
+        attributes: dict[str, list[dict]] = {}
+        if daily_key is not None:
+            attributes["forecast"] = [
                 {"date": day["date"], key: day.get(daily_key)}
                 for day in daily_forecast
-            ],
-            "hourly_forecast": [
-                {"datetime": hour["datetime"], key: hour.get(key)}
+            ]
+        if hourly_key is not None:
+            attributes["hourly_forecast"] = [
+                {"datetime": hour["datetime"], key: hour.get(hourly_key)}
                 for hour in hourly_forecast
-            ],
-        }
+            ]
+        return attributes
