@@ -12,7 +12,7 @@ The code in this folder is already shaped for default-store submission
 
 ## 1. Publish the GitHub repository
 
-- [ ] Create/push to `https://github.com/cloudbr34k84/Open-Meteo-Marine-Weather`
+- [ ] Create/push to `https://github.com/cloudbr34k84/home-assistant-Open-Meteo-Marine-Weather`
       (must match the `documentation` and `issue_tracker` URLs in `manifest.json`).
 - [ ] Repository root must contain: `custom_components/`, `hacs.json`, `README.md`,
       `LICENSE`, `.github/workflows/validate.yaml` — i.e. push this folder as-is.
@@ -46,7 +46,7 @@ inside the integration folder does **not** satisfy this.
 ## 5. Submit to hacs/default
 
 - [ ] Fork `https://github.com/hacs/default`.
-- [ ] Add `cloudbr34k84/Open-Meteo-Marine-Weather` to the `integration` file.
+- [ ] Add `cloudbr34k84/home-assistant-Open-Meteo-Marine-Weather` to the `integration` file.
 - [ ] Open a PR. The HACS bot validates automatically; fix anything it flags.
 
 ## Notes
