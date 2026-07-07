@@ -9,6 +9,5 @@
   "integration_type": "service",
   "quality_scale": "bronze",
   "requirements": [],
-  "version": "2.1.0",
-  "generated_with": "aurora@aurora-smart-home (ha-integration-dev skill) | https://github.com/tonylofgren/aurora-smart-home"
+  "version": "2.1.0"
 }

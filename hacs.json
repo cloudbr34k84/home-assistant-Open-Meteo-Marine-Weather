@@ -1,6 +1,5 @@
 {
   "name": "Open-Meteo Marine Weather",
   "render_readme": true,
-  "homeassistant": "2024.4.0",
-  "generated_with": "aurora@aurora-smart-home (ha-integration-dev skill) | https://github.com/tonylofgren/aurora-smart-home"
+  "homeassistant": "2024.4.0"
 }
