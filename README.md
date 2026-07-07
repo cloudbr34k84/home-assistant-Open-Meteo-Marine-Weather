@@ -118,6 +118,14 @@ coordinator logs an `UpdateFailed` warning under the
 `open_meteo_marine_weather` logger and retries on the next 30-minute cycle;
 sensors recover automatically once the API responds.
 
+**Diagnosing a specific location**
+Download diagnostics from the device page (**Settings → Devices & Services →
+Open-Meteo Marine Weather → (location) → ⋮ → Download diagnostics**). The
+file includes the coordinator's last update status, the configured
+coordinates, and the full last-fetched API payload — useful for confirming
+whether a persistent `unknown` sensor is a genuine data gap upstream or a
+local polling failure.
+
 ## Recovery
 
 If the integration fails to load after a restart:
