@@ -42,7 +42,7 @@ build/
 # ----------------------------
 !.github/              # workflows required for CI
 !custom_components/    # your integration code
-!brands/               # logos/icons for your domain
+!brand/                # logos/icons for your domain
 !README.md
 !LICENSE
 !hacs.json

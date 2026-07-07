@@ -12,35 +12,39 @@ The code in this folder is already shaped for default-store submission
 
 ## 1. Publish the GitHub repository
 
-- [ ] Create/push to `https://github.com/cloudbr34k84/home-assistant-Open-Meteo-Marine-Weather`
+- [x] Create/push to `https://github.com/cloudbr34k84/home-assistant-Open-Meteo-Marine-Weather`
       (must match the `documentation` and `issue_tracker` URLs in `manifest.json`).
-- [ ] Repository root must contain: `custom_components/`, `hacs.json`, `README.md`,
+- [x] Repository root must contain: `custom_components/`, `hacs.json`, `README.md`,
       `LICENSE`, `.github/workflows/validate.yaml` — i.e. push this folder as-is.
-- [ ] Add repository **topics**: `hacs`, `home-assistant`, `homeassistant`,
+- [x] Add repository **topics**: `hacs`, `home-assistant`, `homeassistant`,
       `custom-integration`.
 
 ## 2. Pass CI
 
 - [ ] The included `.github/workflows/validate.yaml` runs **hassfest** and the
       **HACS action**. Both must be green.
-- [ ] A red hassfest run usually means a manifest field is missing or the brand
-      (step 3) is not yet registered.
+- [ ] A red hassfest run usually means a manifest field is missing.
 
-## 3. Register brand assets (home-assistant/brands)
+## 3. Brand assets
 
-Default HACS requires the domain to exist in the brands repo. The `logo.png`
-inside the integration folder does **not** satisfy this.
-
-- [ ] Fork `https://github.com/home-assistant/brands`.
-- [ ] Add:
-      - `custom_integrations/open_meteo_marine_weather/logo.png`
-      - `custom_integrations/open_meteo_marine_weather/icon.png` (square, 256x256+)
-      (see the brands repo README for exact size/format rules)
-- [ ] Open a PR and wait for merge. Until merged, HACS brand validation fails.
+- [x] Local brand images are shipped in
+      `custom_components/open_meteo_marine_weather/brand/` (singular — this is
+      the required folder name, not `brands/`) with `icon.png` 256x256,
+      `icon@2x.png` 512x512, `logo.png`, `logo@2x.png`. Since Home Assistant
+      2026.3, custom integrations serve their own brand images this way, and
+      `home-assistant/brands` now documents its `custom_integrations/` folder
+      as **legacy** — local images take priority automatically, no PR needed.
+      (Earlier CI runs failed HACS brand validation because the folder was
+      misnamed `brands/`; fixed by renaming to `brand/`.)
+- [ ] If a future HACS/hassfest validator run still flags a missing brand
+      registration, fall back to forking `home-assistant/brands` and adding
+      `custom_integrations/open_meteo_marine_weather/{icon,logo}.png` — but
+      don't do this preemptively.
 
 ## 4. Cut a release
 
-- [ ] Tag a release, e.g. `v1.0.0`, matching `version` in `manifest.json`.
+- [x] Tag a release matching `version` in `manifest.json` — `v2.1.0` published
+      at https://github.com/cloudbr34k84/home-assistant-Open-Meteo-Marine-Weather/releases/tag/v2.1.0.
       HACS installs from GitHub releases, not from the default branch.
 
 ## 5. Submit to hacs/default
