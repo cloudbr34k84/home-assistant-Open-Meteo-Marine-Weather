@@ -12,6 +12,10 @@ DOMAIN = "open_meteo_marine_weather"
 
 API_URL = "https://marine-api.open-meteo.com/v1/marine"
 
+# Bound how long a single request may hang before we give up and let the
+# coordinator/config flow report a failure instead of blocking indefinitely.
+API_TIMEOUT = 10
+
 # Configuration keys
 CONF_LATITUDE = "latitude"
 CONF_LONGITUDE = "longitude"

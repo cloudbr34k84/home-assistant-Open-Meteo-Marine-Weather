@@ -18,6 +18,7 @@ from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 
 from .const import (
+    API_TIMEOUT,
     API_URL,
     CONF_ENABLED_SENSORS,
     CONF_LATITUDE,
@@ -61,8 +62,10 @@ class MarineWeatherConfigFlow(ConfigFlow, domain=DOMAIN):
             latitude = user_input[CONF_LATITUDE]
             longitude = user_input[CONF_LONGITUDE]
 
-            # One entry per coordinate pair.
-            await self.async_set_unique_id(f"{latitude}_{longitude}")
+            # One entry per coordinate pair. Round to 4 decimal places
+            # (~11m) so float-precision differences in re-entered
+            # coordinates don't create duplicate entries for the same spot.
+            await self.async_set_unique_id(f"{latitude:.4f}_{longitude:.4f}")
             self._abort_if_unique_id_configured()
 
             current_data, error = await self._async_fetch_current(latitude, longitude)
@@ -162,9 +165,19 @@ class MarineWeatherConfigFlow(ConfigFlow, domain=DOMAIN):
         }
 
         try:
-            async with session.get(API_URL, params=params) as response:
+            async with session.get(
+                API_URL,
+                params=params,
+                timeout=aiohttp.ClientTimeout(total=API_TIMEOUT),
+            ) as response:
+                if response.status == 429:
+                    _LOGGER.debug("Open-Meteo rate limit exceeded (HTTP 429)")
+                    return None, "cannot_connect"
                 response.raise_for_status()
                 data = await response.json()
+        except TimeoutError as err:
+            _LOGGER.debug("Timed out connecting to Open-Meteo: %s", err)
+            return None, "cannot_connect"
         except aiohttp.ClientError as err:
             _LOGGER.debug("Cannot connect to Open-Meteo: %s", err)
             return None, "cannot_connect"

@@ -19,6 +19,7 @@ from homeassistant.helpers.update_coordinator import (
 )
 
 from .const import (
+    API_TIMEOUT,
     API_URL,
     CONF_LATITUDE,
     CONF_LONGITUDE,
@@ -68,11 +69,30 @@ class MarineWeatherCoordinator(DataUpdateCoordinator[dict]):
         }
 
         try:
-            async with self._session.get(API_URL, params=params) as response:
+            async with self._session.get(
+                API_URL,
+                params=params,
+                timeout=aiohttp.ClientTimeout(total=API_TIMEOUT),
+            ) as response:
+                if response.status == 429:
+                    raise UpdateFailed(
+                        "Open-Meteo rate limit exceeded (HTTP 429); "
+                        "will retry on the next update interval"
+                    )
                 response.raise_for_status()
                 data = await response.json()
+        except TimeoutError as err:
+            raise UpdateFailed(f"Timed out communicating with Open-Meteo: {err}") from err
         except aiohttp.ClientError as err:
             raise UpdateFailed(f"Error communicating with Open-Meteo: {err}") from err
+
+        # Open-Meteo can return HTTP 200 with a JSON error body (e.g. for
+        # coordinates outside marine coverage), so raise_for_status() alone
+        # will not catch it.
+        if data.get("error"):
+            raise UpdateFailed(
+                f"Open-Meteo reported an error: {data.get('reason', 'unknown error')}"
+            )
 
         current = data.get("current")
         if not isinstance(current, dict):
