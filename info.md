@@ -4,13 +4,13 @@ Marine weather conditions from the free [Open-Meteo Marine API](https://marine-a
 
 ## Requirements
 
-- Home Assistant 2024.4 or later
+- Home Assistant 2026.3 or later
 - HACS installed
 
 ## Features
 
 - Configured entirely through the UI — no YAML
-- One device per location, with up to 13 individual sensors (wave/swell/wind-wave height, direction, period)
+- One device per location, with up to 28 individual sensors (wave, swell, and wind-wave height/direction/period, plus secondary and tertiary swell, sea surface temperature, sea level, and ocean current)
 - A confirm step at setup shows each sensor's live value so you can skip any that don't apply to your location
 - 7-day daily forecast and 24-hour hourly forecast as sensor attributes
 - All sensors for a location share a single coordinator poll every 30 minutes
