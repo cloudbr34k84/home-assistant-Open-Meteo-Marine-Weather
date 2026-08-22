@@ -33,6 +33,7 @@ from .entity import build_device_info
 from .surf_score import (
     DEFAULT_SURF_OPTIONS,
     SURF_RATINGS,
+    SurfOptions,
     best_upcoming_window,
     score_conditions,
 )
@@ -93,15 +94,6 @@ SENSOR_DESCRIPTIONS: tuple[MarineSensorDescription, ...] = (
         state_class=SensorStateClass.MEASUREMENT,
         value_fn=lambda data: data.get("wave_period"),
         daily_key="wave_period_max",
-    ),
-    MarineSensorDescription(
-        key="wave_peak_period",
-        translation_key="wave_peak_period",
-        device_class=SensorDeviceClass.DURATION,
-        native_unit_of_measurement=UnitOfTime.SECONDS,
-        state_class=SensorStateClass.MEASUREMENT,
-        value_fn=lambda data: data.get("wave_peak_period"),
-        hourly_key="wave_peak_period",
     ),
     MarineSensorDescription(
         key="swell_wave_height",
@@ -248,38 +240,6 @@ SENSOR_DESCRIPTIONS: tuple[MarineSensorDescription, ...] = (
         value_fn=lambda data: degrees_to_compass(data.get("ocean_current_direction")),
     ),
     MarineSensorDescription(
-        key="tertiary_swell_wave_height",
-        translation_key="tertiary_swell_wave_height",
-        device_class=SensorDeviceClass.DISTANCE,
-        native_unit_of_measurement=UnitOfLength.METERS,
-        state_class=SensorStateClass.MEASUREMENT,
-        value_fn=lambda data: data.get("tertiary_swell_wave_height"),
-        hourly_key="tertiary_swell_wave_height",
-    ),
-    MarineSensorDescription(
-        key="tertiary_swell_wave_direction",
-        translation_key="tertiary_swell_wave_direction",
-        native_unit_of_measurement=DEGREE,
-        value_fn=lambda data: data.get("tertiary_swell_wave_direction"),
-        hourly_key="tertiary_swell_wave_direction",
-    ),
-    MarineSensorDescription(
-        key="tertiary_swell_wave_direction_name",
-        translation_key="tertiary_swell_wave_direction_name",
-        value_fn=lambda data: degrees_to_compass(
-            data.get("tertiary_swell_wave_direction")
-        ),
-    ),
-    MarineSensorDescription(
-        key="tertiary_swell_wave_period",
-        translation_key="tertiary_swell_wave_period",
-        device_class=SensorDeviceClass.DURATION,
-        native_unit_of_measurement=UnitOfTime.SECONDS,
-        state_class=SensorStateClass.MEASUREMENT,
-        value_fn=lambda data: data.get("tertiary_swell_wave_period"),
-        hourly_key="tertiary_swell_wave_period",
-    ),
-    MarineSensorDescription(
         key="invert_barometer_height",
         translation_key="invert_barometer_height",
         device_class=SensorDeviceClass.DISTANCE,
@@ -290,9 +250,29 @@ SENSOR_DESCRIPTIONS: tuple[MarineSensorDescription, ...] = (
     ),
 )
 
+# Sensors dropped in 2.3.0: Open-Meteo's best_match model returns null for
+# these at every location tested (Australia, Hawaii, Portugal, South Africa,
+# Canada), so they only ever produced permanently-unknown entities.
+#
+# Deliberately NOT the full set of null-prone variables: swell_wave_peak_period
+# and wind_wave_peak_period read null in most regions but return real data on
+# the European Atlantic, so they stay. The confirm step lets users skip them
+# where they are blank.
+REMOVED_SENSOR_KEYS = frozenset(
+    {
+        "wave_peak_period",
+        "tertiary_swell_wave_height",
+        "tertiary_swell_wave_direction",
+        "tertiary_swell_wave_direction_name",
+        "tertiary_swell_wave_period",
+    }
+)
+
 # The sensors this integration shipped with before the current set existed.
 # Used only by async_migrate_entry to tell an untouched old default set apart
-# from a list the user actually edited.
+# from a list the user actually edited. This is a historical record: it must
+# keep listing keys even after they are removed from SENSOR_DESCRIPTIONS, or
+# the minor_version 1 upgrade path stops recognising old default entries.
 PREVIOUS_DEFAULT_SENSOR_KEYS = {
     "wave_height",
     "wave_direction",
@@ -416,7 +396,16 @@ class SurfRatingSensor(CoordinatorEntity[MarineWeatherCoordinator], SensorEntity
         super().__init__(coordinator)
         self._attr_unique_id = f"{entry.unique_id}_surf_rating"
         self._attr_device_info = build_device_info(entry)
-        self._options = {**DEFAULT_SURF_OPTIONS, **entry.options}
+        self._entry = entry
+
+    @property
+    def _options(self) -> SurfOptions:
+        """Return the current thresholds, read live from the config entry.
+
+        Read on each access rather than cached at init so the threshold
+        number entities take effect without reloading the config entry.
+        """
+        return {**DEFAULT_SURF_OPTIONS, **self._entry.options}
 
     @property
     def native_value(self) -> str | None:

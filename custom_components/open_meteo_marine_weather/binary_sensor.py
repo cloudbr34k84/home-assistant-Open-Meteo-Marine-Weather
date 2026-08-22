@@ -14,7 +14,7 @@ from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from . import MarineWeatherConfigEntry
 from .coordinator import MarineWeatherCoordinator
 from .entity import build_device_info
-from .surf_score import DEFAULT_SURF_OPTIONS, score_conditions
+from .surf_score import DEFAULT_SURF_OPTIONS, SurfOptions, score_conditions
 
 
 async def async_setup_entry(
@@ -42,7 +42,16 @@ class GoodSurfBinarySensor(
         super().__init__(coordinator)
         self._attr_unique_id = f"{entry.unique_id}_good_surf"
         self._attr_device_info = build_device_info(entry)
-        self._options = {**DEFAULT_SURF_OPTIONS, **entry.options}
+        self._entry = entry
+
+    @property
+    def _options(self) -> SurfOptions:
+        """Return the current thresholds, read live from the config entry.
+
+        Read on each access rather than cached at init so the threshold
+        number entities take effect without reloading the config entry.
+        """
+        return {**DEFAULT_SURF_OPTIONS, **self._entry.options}
 
     @property
     def is_on(self) -> bool | None:

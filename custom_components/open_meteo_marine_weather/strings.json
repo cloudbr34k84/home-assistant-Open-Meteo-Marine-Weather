@@ -23,21 +23,10 @@
       "no_marine_data": "Open-Meteo has no marine data for this location. Marine data is only available for coastal and ocean coordinates."
     },
     "abort": {
-      "already_configured": "This location is already configured."
-    }
-  },
-  "options": {
-    "step": {
-      "init": {
-        "title": "Surf quality thresholds",
-        "description": "Tune what counts as good surf at this location.",
-        "data": {
-          "min_wave_height": "Minimum ideal wave height (m)",
-          "max_wave_height": "Maximum ideal wave height (m)",
-          "min_period": "Minimum ideal swell period (s)",
-          "max_chop_ratio": "Maximum wind-wave chop ratio"
-        }
-      }
+      "already_configured": "This location is already configured.",
+      "reconfigure_successful": "Sensor selection updated.",
+      "cannot_connect": "Failed to connect to Open-Meteo. Check your internet connection and try again.",
+      "no_marine_data": "Open-Meteo has no marine data for this location. Marine data is only available for coastal and ocean coordinates."
     }
   },
   "entity": {
@@ -46,7 +35,6 @@
       "wave_direction": { "name": "Wave direction" },
       "wave_direction_name": { "name": "Wave direction (compass)" },
       "wave_period": { "name": "Wave period" },
-      "wave_peak_period": { "name": "Wave peak period" },
       "swell_wave_height": { "name": "Swell wave height" },
       "swell_wave_direction": { "name": "Swell wave direction" },
       "swell_wave_direction_name": { "name": "Swell wave direction (compass)" },
@@ -65,10 +53,6 @@
       "ocean_current_velocity": { "name": "Ocean current velocity" },
       "ocean_current_direction": { "name": "Ocean current direction" },
       "ocean_current_direction_name": { "name": "Ocean current direction (compass)" },
-      "tertiary_swell_wave_height": { "name": "Tertiary swell wave height" },
-      "tertiary_swell_wave_direction": { "name": "Tertiary swell wave direction" },
-      "tertiary_swell_wave_direction_name": { "name": "Tertiary swell wave direction (compass)" },
-      "tertiary_swell_wave_period": { "name": "Tertiary swell wave period" },
       "invert_barometer_height": { "name": "Invert barometer height" },
       "surf_rating": {
         "name": "Surf rating",
@@ -82,6 +66,12 @@
     },
     "binary_sensor": {
       "good_surf": { "name": "Good surf" }
+    },
+    "number": {
+      "min_wave_height": { "name": "Minimum wave height" },
+      "max_wave_height": { "name": "Maximum wave height" },
+      "min_period": { "name": "Minimum swell period" },
+      "max_chop_ratio": { "name": "Maximum chop ratio" }
     }
   }
 }

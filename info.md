@@ -10,8 +10,9 @@ Marine weather conditions from the free [Open-Meteo Marine API](https://marine-a
 ## Features
 
 - Configured entirely through the UI — no YAML
-- One device per location, with up to 28 individual sensors (wave, swell, and wind-wave height/direction/period, plus secondary and tertiary swell, sea surface temperature, sea level, and ocean current)
-- A confirm step at setup shows each sensor's live value so you can skip any that don't apply to your location
+- One device per location, with up to 23 individual sensors (wave, swell, and wind-wave height/direction/period, plus secondary swell, sea surface temperature, sea level, and ocean current)
+- A confirm step at setup shows each sensor's live value so you can skip any that don't apply to your location — re-runnable any time via Reconfigure
+- Surf-quality thresholds are adjustable `number` entities, so you can tune them from a dashboard or an automation
 - 7-day daily forecast and 24-hour hourly forecast as sensor attributes
 - All sensors for a location share a single coordinator poll every 30 minutes
 - Any number of locations supported

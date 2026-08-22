@@ -9,11 +9,16 @@ from __future__ import annotations
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant
+from homeassistant.helpers import entity_registry as er
 
 from .const import CONF_ENABLED_SENSORS
 from .coordinator import MarineWeatherCoordinator
 
-PLATFORMS: list[Platform] = [Platform.SENSOR, Platform.BINARY_SENSOR]
+PLATFORMS: list[Platform] = [
+    Platform.SENSOR,
+    Platform.BINARY_SENSOR,
+    Platform.NUMBER,
+]
 
 type MarineWeatherConfigEntry = ConfigEntry[MarineWeatherCoordinator]
 
@@ -27,19 +32,11 @@ async def async_setup_entry(
 
     entry.runtime_data = coordinator
 
-    # Reload the entry when surf-quality thresholds are changed via the
-    # options flow, so entities pick up the new values immediately.
-    entry.async_on_unload(entry.add_update_listener(_async_update_listener))
-
+    # No options update listener: the threshold number entities notify the
+    # coordinator's listeners themselves when a value changes, which avoids
+    # reloading (and visibly recreating) every entity on each adjustment.
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
     return True
-
-
-async def _async_update_listener(
-    hass: HomeAssistant, entry: MarineWeatherConfigEntry
-) -> None:
-    """Reload the config entry when its options change."""
-    await hass.config_entries.async_reload(entry.entry_id)
 
 
 async def async_unload_entry(
@@ -74,12 +71,34 @@ async def async_migrate_entry(
         else:
             enabled_keys = list(stored)
 
-        # Runs before async_setup_entry, so no update listener is registered
-        # yet and this cannot reload an entry that is still setting up.
         hass.config_entries.async_update_entry(
             entry,
             data={**entry.data, CONF_ENABLED_SENSORS: enabled_keys},
             minor_version=2,
         )
+
+    if entry.minor_version < 3:
+        from .sensor import REMOVED_SENSOR_KEYS
+
+        # These sensors read null from Open-Meteo everywhere, so 2.3.0 dropped
+        # them. Existing entries still hold their registry entries and may list
+        # them in enabled_sensors; clear both so they do not linger as
+        # permanently-unavailable entities.
+        registry = er.async_get(hass)
+        for key in REMOVED_SENSOR_KEYS:
+            entity_id = registry.async_get_entity_id(
+                Platform.SENSOR, entry.domain, f"{entry.unique_id}_{key}"
+            )
+            if entity_id:
+                registry.async_remove(entity_id)
+
+        data = entry.data
+        stored = data.get(CONF_ENABLED_SENSORS)
+        if stored is not None:
+            pruned = [key for key in stored if key not in REMOVED_SENSOR_KEYS]
+            if pruned != stored:
+                data = {**data, CONF_ENABLED_SENSORS: pruned}
+
+        hass.config_entries.async_update_entry(entry, data=data, minor_version=3)
 
     return True

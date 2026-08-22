@@ -102,17 +102,25 @@ def score_conditions(
 def best_upcoming_window(
     hourly_forecast: list[dict], options: SurfOptions, top_n: int = 3
 ) -> list[dict]:
-    """Score each hourly forecast entry and return the top_n best hours."""
-    scored = []
+    """Return the next top_n upcoming hours that meet the surf-quality thresholds.
+
+    hourly_forecast arrives forward-chronological, so taking the first
+    qualifying entries yields the soonest good hours rather than the
+    highest-scoring ones. Returns an empty list when nothing in the
+    forecast window qualifies, which is itself a useful signal.
+    """
+    good_hours = []
     for hour in hourly_forecast:
         rating, score, meets = score_conditions(hour, options)
-        scored.append(
+        if not meets:
+            continue
+        good_hours.append(
             {
                 "datetime": hour.get("datetime"),
                 "rating": rating,
                 "score": score,
-                "meets_thresholds": meets,
             }
         )
-    scored.sort(key=lambda entry: entry["score"], reverse=True)
-    return scored[:top_n]
+        if len(good_hours) == top_n:
+            break
+    return good_hours

@@ -46,6 +46,41 @@ All sensors for a location share a single `DataUpdateCoordinator` that polls
 Open-Meteo every 30 minutes, so adding more locations does not multiply the
 number of API calls per location beyond one request each.
 
+### API variables at a glance
+
+Each poll makes **one HTTP request** to the
+[Marine Weather API](https://open-meteo.com/en/docs/marine-weather-api)
+(`https://marine-api.open-meteo.com/v1/marine`), asking for all three of the
+API's variable groups at once:
+
+| Open-Meteo parameter | What it returns | Feeds |
+|---|---|---|
+| `current` | One live reading per variable, e.g. `wave_height` | The sensor's **state** |
+| `daily` | 7-day max/dominant values, e.g. `wave_height_max` | The sensor's `forecast` attribute |
+| `hourly` | Next 24 hours, same variable names as `current`, e.g. `wave_height` | The sensor's `hourly_forecast` attribute |
+
+Worked example for wave height — three API fields, one sensor:
+- `current.wave_height` → state of `sensor.<name>_wave_height`
+- `daily.wave_height_max` → `forecast` attribute (one entry per day)
+- `hourly.wave_height` → `hourly_forecast` attribute (one entry per hour)
+
+Not every variable is published in all three groups upstream:
+
+- **Wave, swell, and wind-wave height/direction/period** (11 sensors) get all
+  three — state, `forecast`, and `hourly_forecast`.
+- **Peak periods, secondary/tertiary swell, sea level, sea surface
+  temperature, ocean current, and invert barometer height** have no daily
+  max/dominant field in the API, so those sensors get state and
+  `hourly_forecast` only — no `forecast` attribute.
+- **Compass-name sensors** (e.g. `wave_direction_name`) are derived locally
+  from another sensor's current reading, not fetched from the API directly —
+  they have no `forecast` or `hourly_forecast` attribute of their own.
+
+See the code: `const.py` defines `CURRENT_VARIABLES`, `DAILY_VARIABLES`, and
+`HOURLY_VARIABLES`; `coordinator.py` builds the request from them; `sensor.py`
+maps each Open-Meteo field to a sensor via `daily_key`/`hourly_key` on each
+`MarineSensorDescription`.
+
 ### Surf quality entities
 
 Two additional entities are created automatically for every location — they
@@ -54,25 +89,26 @@ below, since they're a derived feature rather than a raw Open-Meteo variable:
 
 | Entity | What it shows |
 |--------|---------------|
-| **Surf rating** sensor (`sensor.<name>_surf_rating`) | A one-word read of current conditions — `Poor`, `Fair`, `Good`, or `Epic` — computed from wave height, swell period, and how much wind-driven chop is mixed into the swell. Attributes: `score` (the underlying 0–100 number behind the rating) and `next_good_window` (the best 3 upcoming hours in the next 24, each with a datetime, rating, and score) — use this to answer "when's it worth going down?" without reading the raw hourly forecast yourself. |
+| **Surf rating** sensor (`sensor.<name>_surf_rating`) | A one-word read of current conditions — `Poor`, `Fair`, `Good`, or `Epic` — computed from wave height, swell period, and how much wind-driven chop is mixed into the swell. Attributes: `score` (the underlying 0–100 number behind the rating) and `next_good_window` (the next 3 upcoming hours in the next 24 that actually meet your thresholds, each with a datetime, rating, and score — empty when none do) — use this to answer "when's it worth going down?" without reading the raw hourly forecast yourself. |
 | **Good surf** binary sensor (`binary_sensor.<name>_good_surf`) | On/off — `on` only when current conditions strictly meet all three configured thresholds (wave height in range, period long enough, chop low enough). This is the entity to trigger automations/notifications from, since it's a clean boolean rather than a heuristic score. Attributes: `rating` and `score`, same as above. |
 
 Both are computed from the same shared scoring logic and read from data the
 coordinator already fetched — no extra API calls.
 
-**Tuning the thresholds:** each location has its own settings, changeable any
-time without re-adding the integration — go to **Settings → Devices &
-Services → Open-Meteo Marine Weather → (location) → Configure**:
+**Tuning the thresholds:** each location's thresholds are `number` entities on
+its device, so they can be adjusted from a dashboard card, set by an
+automation, or edited under **Settings → Devices & Services → Open-Meteo
+Marine Weather → (location)** in the Configuration section:
 
-| Setting | Default | Meaning |
-|---------|---------|---------|
-| Minimum ideal wave height (m) | 0.8 | Below this, conditions are scored as too small. |
-| Maximum ideal wave height (m) | 2.0 | Above this, conditions are scored as oversized. |
-| Minimum ideal swell period (s) | 8.0 | Shorter periods score lower — short-period energy is generally wind slop, not clean groundswell. |
-| Maximum wind-wave chop ratio | 0.5 | How much wind-wave height is tolerated relative to swell height before conditions are marked "too choppy." |
+| Entity | Default | Meaning |
+|--------|---------|---------|
+| Minimum wave height (m) | 0.8 | Below this, conditions are scored as too small. |
+| Maximum wave height (m) | 2.0 | Above this, conditions are scored as oversized. |
+| Minimum swell period (s) | 8.0 | Shorter periods score lower — short-period energy is generally wind slop, not clean groundswell. |
+| Maximum chop ratio | 0.5 | How much wind-wave height is tolerated relative to swell height before conditions are marked "too choppy." |
 
-Changing these reloads the integration automatically so the new thresholds
-take effect immediately.
+The surf rating and good-surf sensors re-evaluate as soon as a threshold
+changes — no reload, and no entities briefly going unavailable.
 
 ### Forecast attributes
 
@@ -139,7 +175,7 @@ This integration is configured entirely through the UI — there is no YAML.
    longitude default to your Home Assistant instance location.
 4. Submit. The integration validates that Open-Meteo has marine data for the
    coordinates.
-5. **Choose sensors** — a confirmation step lists all 28 possible sensors
+5. **Choose sensors** — a confirmation step lists all 23 possible sensors
    with their current live reading (e.g. "Wave height: 1.44 m"). Every
    sensor is checked by default; uncheck any you don't want — for example,
    a sensor showing "unknown" because this model/location doesn't provide
@@ -149,6 +185,12 @@ This integration is configured entirely through the UI — there is no YAML.
 
 Add the integration again for each additional location. Each coordinate pair
 can only be added once.
+
+**Changing the sensor selection later:** use **Settings → Devices & Services
+→ Open-Meteo Marine Weather → (location) → ⋮ → Reconfigure**. The same
+checklist reappears with live readings and your current selection
+pre-checked, so you can add or remove sensors without deleting the location
+and re-entering its coordinates.
 
 > **Note:** Marine data is only available for coastal and ocean coordinates.
 > Inland coordinates are rejected with a *"no marine data"* error.

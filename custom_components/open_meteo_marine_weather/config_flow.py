@@ -13,10 +13,9 @@ import aiohttp
 import voluptuous as vol
 
 from homeassistant.config_entries import (
-    ConfigEntry,
+    SOURCE_RECONFIGURE,
     ConfigFlow,
     ConfigFlowResult,
-    OptionsFlow,
 )
 from homeassistant.const import CONF_NAME
 from homeassistant.helpers import config_validation as cv
@@ -28,15 +27,10 @@ from .const import (
     CONF_ENABLED_SENSORS,
     CONF_LATITUDE,
     CONF_LONGITUDE,
-    CONF_MAX_CHOP_RATIO,
-    CONF_MAX_WAVE_HEIGHT,
-    CONF_MIN_PERIOD,
-    CONF_MIN_WAVE_HEIGHT,
     CURRENT_VARIABLES,
     DOMAIN,
 )
 from .sensor import SENSOR_DESCRIPTIONS
-from .surf_score import DEFAULT_SURF_OPTIONS
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -54,16 +48,11 @@ class MarineWeatherConfigFlow(ConfigFlow, domain=DOMAIN):
     """Handle a config flow for Open-Meteo Marine Weather."""
 
     VERSION = 1
-    # Bumped to 2 when the stored sensor list became an explicit user choice
-    # rather than something async_setup_entry was free to widen on restart.
-    MINOR_VERSION = 2
-
-    @staticmethod
-    def async_get_options_flow(
-        config_entry: ConfigEntry,
-    ) -> MarineWeatherOptionsFlow:
-        """Create the options flow for tuning surf-quality thresholds."""
-        return MarineWeatherOptionsFlow()
+    # 2: the stored sensor list became an explicit user choice rather than
+    # something async_setup_entry was free to widen on restart.
+    # 3: sensors that Open-Meteo never populates were dropped, and their
+    # leftover registry entries are cleaned up on migration.
+    MINOR_VERSION = 3
 
     def __init__(self) -> None:
         """Initialize the flow."""
@@ -104,11 +93,42 @@ class MarineWeatherConfigFlow(ConfigFlow, domain=DOMAIN):
             errors=errors,
         )
 
+    async def async_step_reconfigure(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
+        """Let an existing entry change which sensors it exposes.
+
+        Name and coordinates are carried over untouched, so the unique ID
+        derived from them cannot drift and needs no re-validation.
+        """
+        reconfigure_entry = self._get_reconfigure_entry()
+        self._name = reconfigure_entry.data[CONF_NAME]
+        self._latitude = reconfigure_entry.data[CONF_LATITUDE]
+        self._longitude = reconfigure_entry.data[CONF_LONGITUDE]
+
+        current_data, error = await self._async_fetch_current(
+            self._latitude, self._longitude
+        )
+        if error:
+            # No earlier form step to attach a field error to, so abort.
+            return self.async_abort(reason=error)
+        self._current_data = current_data or {}
+
+        return await self.async_step_confirm()
+
     async def async_step_confirm(
         self, user_input: dict[str, Any] | None = None
     ) -> ConfigFlowResult:
         """Show each sensor's current value and let the user deselect any."""
         if user_input is not None:
+            if self.source == SOURCE_RECONFIGURE:
+                return self.async_update_reload_and_abort(
+                    self._get_reconfigure_entry(),
+                    data_updates={
+                        CONF_ENABLED_SENSORS: user_input[CONF_ENABLED_SENSORS]
+                    },
+                    reason="reconfigure_successful",
+                )
             return self.async_create_entry(
                 title=self._name,
                 data={
@@ -127,13 +147,23 @@ class MarineWeatherConfigFlow(ConfigFlow, domain=DOMAIN):
             for description in SENSOR_DESCRIPTIONS
         }
 
+        # A fresh entry starts with everything checked; reconfiguring starts
+        # from what the entry currently has, so submitting without changes is
+        # a no-op rather than a silent re-enable of everything.
+        if self.source == SOURCE_RECONFIGURE:
+            default_keys = self._get_reconfigure_entry().data.get(
+                CONF_ENABLED_SENSORS, list(sensor_options)
+            )
+        else:
+            default_keys = list(sensor_options)
+
         return self.async_show_form(
             step_id="confirm",
             data_schema=vol.Schema(
                 {
                     vol.Required(
                         CONF_ENABLED_SENSORS,
-                        default=list(sensor_options),
+                        default=default_keys,
                     ): cv.multi_select(sensor_options),
                 }
             ),
@@ -211,33 +241,3 @@ class MarineWeatherConfigFlow(ConfigFlow, domain=DOMAIN):
             return None, "no_marine_data"
 
         return current, None
-
-
-class MarineWeatherOptionsFlow(OptionsFlow):
-    """Let the user tune the surf-quality scoring thresholds."""
-
-    async def async_step_init(
-        self, user_input: dict[str, Any] | None = None
-    ) -> ConfigFlowResult:
-        """Show and save the surf-quality threshold form."""
-        if user_input is not None:
-            return self.async_create_entry(data=user_input)
-
-        current = {**DEFAULT_SURF_OPTIONS, **self.config_entry.options}
-        schema = vol.Schema(
-            {
-                vol.Required(
-                    CONF_MIN_WAVE_HEIGHT, default=current[CONF_MIN_WAVE_HEIGHT]
-                ): vol.All(vol.Coerce(float), vol.Range(min=0, max=10)),
-                vol.Required(
-                    CONF_MAX_WAVE_HEIGHT, default=current[CONF_MAX_WAVE_HEIGHT]
-                ): vol.All(vol.Coerce(float), vol.Range(min=0, max=15)),
-                vol.Required(
-                    CONF_MIN_PERIOD, default=current[CONF_MIN_PERIOD]
-                ): vol.All(vol.Coerce(float), vol.Range(min=1, max=30)),
-                vol.Required(
-                    CONF_MAX_CHOP_RATIO, default=current[CONF_MAX_CHOP_RATIO]
-                ): vol.All(vol.Coerce(float), vol.Range(min=0.05, max=1.0)),
-            }
-        )
-        return self.async_show_form(step_id="init", data_schema=schema)
