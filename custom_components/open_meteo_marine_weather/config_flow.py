@@ -54,6 +54,9 @@ class MarineWeatherConfigFlow(ConfigFlow, domain=DOMAIN):
     """Handle a config flow for Open-Meteo Marine Weather."""
 
     VERSION = 1
+    # Bumped to 2 when the stored sensor list became an explicit user choice
+    # rather than something async_setup_entry was free to widen on restart.
+    MINOR_VERSION = 2
 
     @staticmethod
     def async_get_options_flow(

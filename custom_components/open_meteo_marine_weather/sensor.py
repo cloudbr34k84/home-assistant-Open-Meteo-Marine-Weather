@@ -290,6 +290,9 @@ SENSOR_DESCRIPTIONS: tuple[MarineSensorDescription, ...] = (
     ),
 )
 
+# The sensors this integration shipped with before the current set existed.
+# Used only by async_migrate_entry to tell an untouched old default set apart
+# from a list the user actually edited.
 PREVIOUS_DEFAULT_SENSOR_KEYS = {
     "wave_height",
     "wave_direction",
@@ -315,24 +318,11 @@ async def async_setup_entry(
     """Set up marine weather sensors from a config entry."""
     coordinator = entry.runtime_data
 
-    # Entries created before the sensor-selection confirm step existed have no
-    # CONF_ENABLED_SENSORS key. Entries with the previous full default set get
-    # newly added sensors automatically, while custom subsets stay unchanged.
+    # Which sensors to create is settled by the config flow and, for older
+    # entries, by async_migrate_entry. Whatever is stored is the user's own
+    # selection and is honoured as-is — never widened here.
     all_sensor_keys = [description.key for description in SENSOR_DESCRIPTIONS]
     enabled_keys = entry.data.get(CONF_ENABLED_SENSORS, all_sensor_keys)
-    if (
-        CONF_ENABLED_SENSORS in entry.data
-        and PREVIOUS_DEFAULT_SENSOR_KEYS.issubset(enabled_keys)
-        and set(enabled_keys) != set(all_sensor_keys)
-    ):
-        enabled_keys = [
-            *enabled_keys,
-            *(key for key in all_sensor_keys if key not in enabled_keys),
-        ]
-        hass.config_entries.async_update_entry(
-            entry,
-            data={**entry.data, CONF_ENABLED_SENSORS: enabled_keys},
-        )
 
     async_add_entities(
         [

@@ -10,6 +10,7 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant
 
+from .const import CONF_ENABLED_SENSORS
 from .coordinator import MarineWeatherCoordinator
 
 PLATFORMS: list[Platform] = [Platform.SENSOR, Platform.BINARY_SENSOR]
@@ -46,3 +47,39 @@ async def async_unload_entry(
 ) -> bool:
     """Unload a config entry."""
     return await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
+
+
+async def async_migrate_entry(
+    hass: HomeAssistant, entry: MarineWeatherConfigEntry
+) -> bool:
+    """Migrate an old config entry to the current schema."""
+    if entry.version > 1:
+        # Written by a newer release than this one; refuse rather than guess.
+        return False
+
+    if entry.minor_version < 2:
+        # Imported here rather than at module scope because sensor.py imports
+        # MarineWeatherConfigEntry from this module.
+        from .sensor import PREVIOUS_DEFAULT_SENSOR_KEYS, SENSOR_DESCRIPTIONS
+
+        stored = entry.data.get(CONF_ENABLED_SENSORS)
+
+        # Minor version 1 kept no record of whether the stored sensor list was
+        # a deliberate choice. Entries with no list at all (created before the
+        # confirm step existed) and entries holding exactly the old default set
+        # are opted into every sensor; any other list was a deselection the
+        # user made by hand, so it is carried over untouched.
+        if stored is None or set(stored) == PREVIOUS_DEFAULT_SENSOR_KEYS:
+            enabled_keys = [description.key for description in SENSOR_DESCRIPTIONS]
+        else:
+            enabled_keys = list(stored)
+
+        # Runs before async_setup_entry, so no update listener is registered
+        # yet and this cannot reload an entry that is still setting up.
+        hass.config_entries.async_update_entry(
+            entry,
+            data={**entry.data, CONF_ENABLED_SENSORS: enabled_keys},
+            minor_version=2,
+        )
+
+    return True
