@@ -127,7 +127,6 @@ class MarineWeatherConfigFlow(ConfigFlow, domain=DOMAIN):
                     data_updates={
                         CONF_ENABLED_SENSORS: user_input[CONF_ENABLED_SENSORS]
                     },
-                    reason="reconfigure_successful",
                 )
             return self.async_create_entry(
                 title=self._name,

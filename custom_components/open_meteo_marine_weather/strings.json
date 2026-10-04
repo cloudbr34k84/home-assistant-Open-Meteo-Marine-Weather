@@ -24,9 +24,13 @@
     },
     "abort": {
       "already_configured": "This location is already configured.",
-      "reconfigure_successful": "Sensor selection updated.",
       "cannot_connect": "Failed to connect to Open-Meteo. Check your internet connection and try again.",
       "no_marine_data": "Open-Meteo has no marine data for this location. Marine data is only available for coastal and ocean coordinates."
+    }
+  },
+  "exceptions": {
+    "migration_newer_version": {
+      "message": "This config entry was created by a newer version of the integration and cannot be downgraded. Update the integration or restore a backup."
     }
   },
   "entity": {

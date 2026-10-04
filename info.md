@@ -4,7 +4,7 @@ Marine weather conditions from the free [Open-Meteo Marine API](https://marine-a
 
 ## Requirements
 
-- Home Assistant 2026.3 or later
+- Home Assistant 2026.10 or later
 - HACS installed
 
 ## Features

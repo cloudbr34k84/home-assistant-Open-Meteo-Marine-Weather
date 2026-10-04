@@ -142,6 +142,8 @@ described in [Surf quality entities](#surf-quality-entities) above.
 
 ## Installation
 
+**Requires Home Assistant 2026.10.0 or later.**
+
 ### Option A — HACS default store (once accepted)
 
 After this integration is accepted into the [default HACS store](SUBMISSION.md):

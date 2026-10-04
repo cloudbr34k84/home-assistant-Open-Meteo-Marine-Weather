@@ -9,9 +9,10 @@ from __future__ import annotations
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant
+from homeassistant.exceptions import ConfigEntryError
 from homeassistant.helpers import entity_registry as er
 
-from .const import CONF_ENABLED_SENSORS
+from .const import CONF_ENABLED_SENSORS, DOMAIN
 from .coordinator import MarineWeatherCoordinator
 
 PLATFORMS: list[Platform] = [
@@ -52,7 +53,10 @@ async def async_migrate_entry(
     """Migrate an old config entry to the current schema."""
     if entry.version > 1:
         # Written by a newer release than this one; refuse rather than guess.
-        return False
+        raise ConfigEntryError(
+            translation_domain=DOMAIN,
+            translation_key="migration_newer_version",
+        )
 
     if entry.minor_version < 2:
         # Imported here rather than at module scope because sensor.py imports
